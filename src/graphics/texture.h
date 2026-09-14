@@ -22,7 +22,7 @@ public:
 	unsigned int height;
 	unsigned int bytes_per_pixel; //bits per pixel
 	bool origin_topleft;
-	Uint8* data; //bytes with the pixel information
+	Uint8* data = nullptr; //bytes with the pixel information
 
 	Image() { width = height = 0; data = NULL; bytes_per_pixel = 3; }
 	Image(int w, int h, int bytes_per_pixel = 3) { data = NULL; resize(w, h, bytes_per_pixel); }

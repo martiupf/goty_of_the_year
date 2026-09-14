@@ -596,11 +596,15 @@ bool Image::loadTGA(const char* filename)
 
 	imageSize = width * height * bytes_per_pixel;
 
+	if (data != nullptr) {
+		delete []data;
+	}
+
 	data = new GLubyte[imageSize];
 	if (data == NULL || fread(data, 1, imageSize, file) != imageSize)
 	{
 		if (data != NULL)
-			delete[]data;
+			delete []data;
 		fclose(file);
 		return NULL;
 	}
@@ -652,6 +656,10 @@ bool Image::loadPNG(const char* filename, bool flip_y)
 	if (decodePNG(out_image, width, height, buffer.empty() ? 0 : &buffer[0], (unsigned long)buffer.size(), true) != 0)
 		return false;
 
+	if (data != nullptr) {
+		delete []data;
+	}
+
 	data = new Uint8[out_image.size()];
 	memcpy(data, &out_image[0], out_image.size());
 	bytes_per_pixel = 4;
@@ -701,6 +709,8 @@ bool Image::saveTGA(const char* filename, bool flip_y)
 
 	fwrite(bytes, 1, width * height * 4, file);
 	fclose(file);
+
+	delete []bytes;
 	return true;
 }
 
