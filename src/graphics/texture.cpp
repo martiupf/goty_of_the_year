@@ -220,7 +220,9 @@ bool Texture::load(const char* filename, bool mipmaps, bool wrap, unsigned int t
 	if (mipmaps)
 		generateMipmaps();
 
-	this->image.clear();
+	image->clear();
+
+	delete image;
 	std::cout << "[OK] Size: " << width << "x" << height << " Time: " << (getTime() - time) * 0.001 << "sec" << std::endl;
 	setName(filename);
 	return true;
