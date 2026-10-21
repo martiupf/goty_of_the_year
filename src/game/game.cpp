@@ -22,7 +22,7 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	this->window_width = window_width;
 	this->window_height = window_height;
 	this->window = window;
-	instance = this; //aaaaaaaaaa
+	instance = this;
 	must_exit = false;
 
 	fps = 0;
