@@ -26,13 +26,15 @@ public:
 	bool must_exit;
 
 	//some vars
-	Camera* camera; //our global camera
+	Camera* camera1; //our global camera
+	Camera* camera2;
 	bool mouse_locked; //tells if the mouse is locked (not seen)
 
 	Game( int window_width, int window_height, SDL_Window* window );
 
 	//main functions
 	void render( void );
+	void renderScene(Camera* camera);
 	void update( double dt );
 
 	void setMouseLocked(bool must_lock);
