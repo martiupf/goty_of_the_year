@@ -37,24 +37,22 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	glEnable( GL_CULL_FACE ); //render both sides of every triangle
 	glEnable( GL_DEPTH_TEST ); //check the occlusions using the Z buffer
 
-	float half_aspect = (window_width * 0.5f) / (float)window_height;
+	float half_aspect = ((window_width - LINE_WIDTH) * 0.5f) / (float)window_height;
 
+	// Cambiado (0, 100, 100) -> (0, 15, 25) para encuadrar la arena de 20x20m de cerca
 	camera1 = new Camera();
-	camera1->lookAt(Vector3(0.f, 100.f, 100.f), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
+	camera1->lookAt(Vector3(0.f, 15.f, 25.f), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
 	camera1->setPerspective(70.f, half_aspect, 0.1f, 10000.f);
 
 	camera2 = new Camera();
-	camera2->lookAt(Vector3(0.f, 100.f, 100.f), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
+	camera2->lookAt(Vector3(0.f, 15.f, 25.f), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
 	camera2->setPerspective(70.f, half_aspect, 0.1f, 10000.f);
 
 	// Load one texture using the Texture Manager
 	texture = Texture::Get("data/textures/texture.tga");
+	shader = Shader::Get("data/shaders/basic.vs", "data/shaders/flat.fs");
 
-	// Example of loading Mesh from Mesh Manager
-	mesh = Mesh::Get("data/meshes/box.ASE");
-
-	// Example of shader loading using the shaders manager
-	shader = Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
+	mesh = Mesh::Get("data/meshes/testing_map.obj");
 
 	// Hide the cursor
 	SDL_ShowCursor(!mouse_locked); //hide or show the mouse
@@ -70,18 +68,17 @@ void Game::renderScene(Camera* camera)
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 
-	// Matriz del modelo (cubo)
+	// CAMBIADO: Quitar m.rotate() para mantener el mapa estático en el origen (0,0,0)
 	Matrix44 m;
-	m.rotate(angle * DEG2RAD, Vector3(0.0f, 1.0f, 0.0f));
 
-	if (shader)
+	if (shader && mesh)
 	{
 		shader->enable();
-		shader->setUniform("u_color", Vector4(1, 1, 1, 1));
+		shader->setUniform("u_color", Vector4(1, 0, 0, 1));
 		shader->setUniform("u_viewprojection", camera->viewprojection_matrix);
-		shader->setUniform("u_texture", texture, 0);
 		shader->setUniform("u_model", m);
-		shader->setUniform("u_time", time);
+
+		// REMOVIDO: u_texture y u_time (flat.fs no requiere textura ni tiempo)
 
 		mesh->render(GL_TRIANGLES);
 
