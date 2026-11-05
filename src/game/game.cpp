@@ -56,6 +56,12 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	// Hide the cursor
 	SDL_ShowCursor(!mouse_locked); //hide or show the mouse
+
+	//n
+	player1 = new Player(Vector3(0, 0, 0));
+	player2 = new Player(Vector3(10, 0, 0));
+
+	camera_mode = FREE_CAMERA;
 }
 
 void Game::renderScene(Camera* camera)
@@ -126,30 +132,36 @@ void Game::update(double seconds_elapsed)
 	// Example
 	angle += (float)seconds_elapsed * 10.0f;
 
-	// Mouse input to rotate the cam
-	if (Input::isMousePressed(SDL_BUTTON_LEFT) || mouse_locked) //is left button pressed?
-	{
-		camera1->rotate(Input::mouse_delta.x * 0.005f, Vector3(0.0f,-1.0f,0.0f));
-		camera1->rotate(Input::mouse_delta.y * 0.005f, camera1->getLocalVector( Vector3(-1.0f,0.0f,0.0f)));
+	if (camera_mode == FREE_CAMERA) {
+		// Mouse input to rotate the cam
+		if (Input::isMousePressed(SDL_BUTTON_LEFT) || mouse_locked) //is left button pressed?
+		{
+			camera1->rotate(Input::mouse_delta.x * 0.005f, Vector3(0.0f, -1.0f, 0.0f));
+			camera1->rotate(Input::mouse_delta.y * 0.005f, camera1->getLocalVector(Vector3(-1.0f, 0.0f, 0.0f)));
+		}
+
+		// Async input to move the camera around
+		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) speed *= 10; //move faster with left shift
+		if (Input::isKeyPressed(SDL_SCANCODE_W)) camera1->move(Vector3(0.0f, 0.0f, 1.0f) * speed);
+		if (Input::isKeyPressed(SDL_SCANCODE_S)) camera1->move(Vector3(0.0f, 0.0f, -1.0f) * speed);
+		if (Input::isKeyPressed(SDL_SCANCODE_A)) camera1->move(Vector3(1.0f, 0.0f, 0.0f) * speed);
+		if (Input::isKeyPressed(SDL_SCANCODE_D)) camera1->move(Vector3(-1.0f, 0.0f, 0.0f) * speed);
+
+		if (Input::isMousePressed(SDL_BUTTON_RIGHT))
+		{
+			camera2->rotate(Input::mouse_delta.x * 0.005f, Vector3(0.0f, -1.0f, 0.0f));
+			camera2->rotate(Input::mouse_delta.y * 0.005f, camera2->getLocalVector(Vector3(-1.0f, 0.0f, 0.0f)));
+		}
+
+		if (Input::isKeyPressed(SDL_SCANCODE_UP))    camera2->move(Vector3(0.0f, 0.0f, 1.0f) * speed);
+		if (Input::isKeyPressed(SDL_SCANCODE_DOWN))  camera2->move(Vector3(0.0f, 0.0f, -1.0f) * speed);
+		if (Input::isKeyPressed(SDL_SCANCODE_LEFT))  camera2->move(Vector3(1.0f, 0.0f, 0.0f) * speed);
+		if (Input::isKeyPressed(SDL_SCANCODE_RIGHT)) camera2->move(Vector3(-1.0f, 0.0f, 0.0f) * speed);
 	}
-
-	// Async input to move the camera around
-	if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT) ) speed *= 10; //move faster with left shift
-	if (Input::isKeyPressed(SDL_SCANCODE_W)) camera1->move(Vector3(0.0f, 0.0f, 1.0f) * speed);
-	if (Input::isKeyPressed(SDL_SCANCODE_S)) camera1->move(Vector3(0.0f, 0.0f,-1.0f) * speed);
-	if (Input::isKeyPressed(SDL_SCANCODE_A)) camera1->move(Vector3(1.0f, 0.0f, 0.0f) * speed);
-	if (Input::isKeyPressed(SDL_SCANCODE_D)) camera1->move(Vector3(-1.0f,0.0f, 0.0f) * speed);
-
-	if (Input::isMousePressed(SDL_BUTTON_RIGHT))
-	{
-		camera2->rotate(Input::mouse_delta.x * 0.005f, Vector3(0.0f, -1.0f, 0.0f));
-		camera2->rotate(Input::mouse_delta.y * 0.005f, camera2->getLocalVector(Vector3(-1.0f, 0.0f, 0.0f)));
+	else if (camera_mode == THIRD_PERSON) {
+		updateThirdPersonCamera(camera1, player1);
+		updateThirdPersonCamera(camera2, player2);
 	}
-
-	if (Input::isKeyPressed(SDL_SCANCODE_UP))    camera2->move(Vector3(0.0f, 0.0f, 1.0f) * speed);
-	if (Input::isKeyPressed(SDL_SCANCODE_DOWN))  camera2->move(Vector3(0.0f, 0.0f, -1.0f) * speed);
-	if (Input::isKeyPressed(SDL_SCANCODE_LEFT))  camera2->move(Vector3(1.0f, 0.0f, 0.0f) * speed);
-	if (Input::isKeyPressed(SDL_SCANCODE_RIGHT)) camera2->move(Vector3(-1.0f, 0.0f, 0.0f) * speed);
 }
 
 //Keyboard event handler (sync input)
@@ -159,6 +171,14 @@ void Game::onKeyDown( SDL_KeyboardEvent event )
 	{
 		case SDLK_ESCAPE: must_exit = true; break; //ESC key, kill the app
 		case SDLK_F1: Shader::ReloadAll(); break; 
+		case SDLK_F2: 
+			if (camera_mode == FREE_CAMERA) {
+				camera_mode = THIRD_PERSON;
+				updateThirdPersonCamera(camera1, player1);
+				updateThirdPersonCamera(camera2, player2);
+			}
+			else { camera_mode = FREE_CAMERA; }
+			break;
 	}
 }
 
@@ -214,4 +234,14 @@ void Game::setMouseLocked(bool must_lock)
 	SDL_SetRelativeMouseMode((SDL_bool)must_lock);
 
 	mouse_locked = must_lock;
+}
+
+//n
+void Game::updateThirdPersonCamera(Camera* camera, Player* player) {
+	Vector3 target = player->position;
+	// distancia de la cámara al jugador
+	Vector3 offset(0.0f, 6.0f, 10.0f);
+	Vector3 camera_position = target + offset;
+
+	camera->lookAt(camera_position, target, Vector3(0.0f, 1.0f, 0.0f));
 }

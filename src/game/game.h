@@ -7,6 +7,12 @@
 #include "framework/includes.h"
 #include "framework/camera.h"
 #include "framework/utils.h"
+#include "player.h"
+
+enum CameraMode {
+	FREE_CAMERA,
+	THIRD_PERSON
+};
 
 class Game
 {
@@ -24,6 +30,11 @@ public:
 	float elapsed_time;
 	int fps;
 	bool must_exit;
+
+	//n
+	Player* player1;
+	Player* player2;
+	CameraMode camera_mode;
 
 	//some vars
 	Camera* camera1; //our global camera
@@ -48,4 +59,7 @@ public:
 	void onGamepadButtonDown(SDL_JoyButtonEvent event);
 	void onGamepadButtonUp(SDL_JoyButtonEvent event);
 	void onResize(int width, int height);
+
+	//n
+	void updateThirdPersonCamera(Camera* camera, Player* player);
 };
