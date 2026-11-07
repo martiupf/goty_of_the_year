@@ -8,7 +8,6 @@
 #include "framework/camera.h"
 #include "framework/utils.h"
 #include "graphics/mesh.h"
-#include "graphics/material.h"
 #include "graphics/texture.h"
 #include "graphics/fbo.h"
 #include "graphics/shader.h"
@@ -57,6 +56,8 @@ public:
 	void render( void );
 	void renderScene(Camera* camera);
 	void update( double dt );
+
+	bool loadLevel(const char* scene_filepath);
 
 	void setMouseLocked(bool must_lock);
 

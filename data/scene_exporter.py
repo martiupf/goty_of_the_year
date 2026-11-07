@@ -4,6 +4,15 @@ from bpy_extras.io_utils import axis_conversion
 import os
 import shutil
 
+def get_texture_filename(obj):
+    if obj.type == 'MESH' and obj.data.materials and obj.data.materials[0]:
+        mat = obj.data.materials[0]
+        if mat.use_nodes and mat.node_tree:
+            for node in mat.node_tree.nodes:
+                if node.type == 'TEX_IMAGE' and node.image:
+                    return os.path.basename(node.image.filepath)
+    return "missing.tga" # Textura por defecto si no tiene asignada ninguna
+
 filepath = bpy.path.abspath("//") + "myscene.scene"
 abs_folderpath = bpy.path.abspath("//")
 
@@ -18,7 +27,7 @@ if os.path.exists(abs_folderpath + "scene/"):
 
 with open(filepath, 'w') as f:
     
-    f.write("#NAME MODEL\n")
+    f.write("#NAME MODEL TEXTURE\n")
          
     for object in context.visible_objects:
         
@@ -60,6 +69,8 @@ with open(filepath, 'w') as f:
             
         else:
             continue
+
+        texture_name = get_texture_filename(object)
 
         # Store original mat        
         original_mat = object.matrix_world.copy()
@@ -111,7 +122,5 @@ with open(filepath, 'w') as f:
         f.write(",")
         f.write( str( round(original_mat[3][3], round_val) ) )
         
+        f.write(" " + texture_name)
         f.write("\n")
-
-            
-            

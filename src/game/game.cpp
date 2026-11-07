@@ -1,11 +1,9 @@
 #include "game.h"
+#include "scene_parser/scene_parser.h"
 #include <cmath>
 
 #define LINE_WIDTH 4
 
-Mesh* mesh = NULL;
-Texture* texture = NULL;
-Shader* shader = NULL;
 float angle = 0;
 float mouse_speed = 100.0f;
 
@@ -38,11 +36,6 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	camera2->lookAt(Vector3(0.f, 15.f, 25.f), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
 	camera2->setPerspective(70.f, half_aspect, 0.1f, 10000.f);
 
-	texture = Texture::Get("data/textures/texture.tga");
-	shader = Shader::Get("data/shaders/basic.vs", "data/shaders/flat.fs");
-
-	mesh = Mesh::Get("data/meshes/testing_map.obj");
-
 	SDL_ShowCursor(!mouse_locked);
 
 	player1 = new Player(Vector3(0, 0, 0));
@@ -50,20 +43,30 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	camera_mode = FREE_CAMERA;
 
-	// Crear la entidad mapa y aÃ±adirla a la raÃ­z del World
+	loadLevel("data/myscene.scene");
+}
+
+bool Game::loadLevel(const char* scene_filepath)
+{
 	World* world = World::getInstance();
 
-	EntityMesh* map_entity = new EntityMesh();
-	map_entity->name = "testing_map";
-	map_entity->mesh = Mesh::Get("data/meshes/testing_map.obj");
+	// 1. Limpiar las entidades del mapa anterior si ya existen
+	if (world->root && !world->root->children.empty()) {
+		for (Entity* child : world->root->children) {
+			delete child; // Liberar memoria RAM de la entidad
+		}
+		world->root->children.clear();
+	}
 
-	Material* map_mat = new Material();
-	map_mat->shader = Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
-	map_mat->diffuse = Texture::Get("data/textures/missing.tga");
-	map_mat->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	map_entity->material = map_mat;
+	// 2. Parsear el nuevo mapa recibido por parámetro
+	SceneParser parser;
+	if (!parser.parse(scene_filepath, world->root)) {
+		std::cerr << "[ERROR] Fallo al cargar el nivel: " << scene_filepath << std::endl;
+		return false;
+	}
 
-	world->root->addChild(map_entity);
+	std::cout << "[OK] Nivel cargado con éxito: " << scene_filepath << std::endl;
+	return true;
 }
 
 void Game::renderScene(Camera* camera)
