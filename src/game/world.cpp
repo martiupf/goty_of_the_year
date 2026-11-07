@@ -20,6 +20,7 @@ World* World::getInstance() {
 }
 
 void World::render(Camera* camera) {
+    //This renders all the meshes by recursively calling the entity->render method until the last mesh comes and it doesn't have a child
     if (root) root->render(camera);
 }
 

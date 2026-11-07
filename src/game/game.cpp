@@ -11,6 +11,7 @@ Game* Game::instance = NULL;
 
 Game::Game(int window_width, int window_height, SDL_Window* window)
 {
+	printf("updated");
 	this->window_width = window_width;
 	this->window_height = window_height;
 	this->window = window;
@@ -43,35 +44,36 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	camera_mode = FREE_CAMERA;
 
-	loadLevel("data/myscene.scene");
+	loadMap("data/myscene.scene");
 }
 
-bool Game::loadLevel(const char* scene_filepath)
+bool Game::loadMap(const char* scene_filepath)
 {
+	//There's only one world instance. We get that instance
 	World* world = World::getInstance();
-
-	// 1. Limpiar las entidades del mapa anterior si ya existen
+	//If another map was loaded
 	if (world->root && !world->root->children.empty()) {
 		for (Entity* child : world->root->children) {
-			delete child; // Liberar memoria RAM de la entidad
+			delete child;
 		}
 		world->root->children.clear();
 	}
 
-	// 2. Parsear el nuevo mapa recibido por parámetro
+	//Parse the map with SceneParser
 	SceneParser parser;
 	if (!parser.parse(scene_filepath, world->root)) {
-		std::cerr << "[ERROR] Fallo al cargar el nivel: " << scene_filepath << std::endl;
+		std::cerr << "[ERROR] Failed to load the map: " << scene_filepath << std::endl;
 		return false;
 	}
 
-	std::cout << "[OK] Nivel cargado con éxito: " << scene_filepath << std::endl;
+	std::cout << "[OK] Map successfully loaded: " << scene_filepath << std::endl;
 	return true;
 }
 
 void Game::renderScene(Camera* camera)
 {
 	camera->enable();
+	//This renders all meshes of the world
 	World::getInstance()->render(camera);
 	drawGrid();
 }
@@ -109,7 +111,7 @@ void Game::update(double seconds_elapsed)
 			camera1->rotate(Input::mouse_delta.y * 0.005f, camera1->getLocalVector(Vector3(-1.0f, 0.0f, 0.0f)));
 		}
 
-		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) speed *= 10;
+		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) speed *= 5;
 		if (Input::isKeyPressed(SDL_SCANCODE_W)) camera1->move(Vector3(0.0f, 0.0f, 1.0f) * speed);
 		if (Input::isKeyPressed(SDL_SCANCODE_S)) camera1->move(Vector3(0.0f, 0.0f, -1.0f) * speed);
 		if (Input::isKeyPressed(SDL_SCANCODE_A)) camera1->move(Vector3(1.0f, 0.0f, 0.0f) * speed);

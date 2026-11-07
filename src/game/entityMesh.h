@@ -3,7 +3,6 @@
 #include "framework/entities/entity.h"
 #include "graphics/mesh.h"
 
-// Keep Material's helper struct distinct from SceneParser's global sRenderData.
 #define sRenderData MaterialRenderData
 #include "graphics/material.h"
 #undef sRenderData

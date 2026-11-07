@@ -46,7 +46,7 @@ public:
 	CameraMode camera_mode;
 
 	//some vars
-	Camera* camera1; //our global camera
+	Camera* camera1;
 	Camera* camera2;
 	bool mouse_locked; //tells if the mouse is locked (not seen)
 
@@ -57,7 +57,7 @@ public:
 	void renderScene(Camera* camera);
 	void update( double dt );
 
-	bool loadLevel(const char* scene_filepath);
+	bool loadMap(const char* scene_filepath);
 
 	void setMouseLocked(bool must_lock);
 

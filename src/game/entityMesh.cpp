@@ -1,10 +1,18 @@
 #include "entityMesh.h"
 #include "graphics/shader.h"
+#include "graphics/texture.h"
 
 EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
     : mesh(mesh), material(material) {
+    if (!this->material.shader) {
+        this->material.shader = Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
+    }
+    if (!this->material.diffuse) {
+        this->material.diffuse = Texture::Get("data/textures/missing.tga");
+    }
 }
 
+//Render the mesh in the world
 void EntityMesh::render(Camera* camera) {
     if (!mesh) return;
 
@@ -26,6 +34,7 @@ void EntityMesh::render(Camera* camera) {
     if (isInstanced && !models.empty()) {
         Matrix44 parent_matrix;
         if (parent) {
+            //Preguntar porque esto es con parents
             parent_matrix = parent->getGlobalMatrix();
         }
 

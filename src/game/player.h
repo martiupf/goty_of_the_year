@@ -5,6 +5,8 @@
 #include "framework/utils.h"
 #include "graphics/mesh.h"
 
+
+//Para Pedro: necesitamos que esto herede de entity
 class Player
 {
 public:
