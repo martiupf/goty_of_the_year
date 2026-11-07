@@ -7,7 +7,17 @@
 #include "framework/includes.h"
 #include "framework/camera.h"
 #include "framework/utils.h"
+#include "graphics/mesh.h"
+#include "graphics/material.h"
+#include "graphics/texture.h"
+#include "graphics/fbo.h"
+#include "graphics/shader.h"
+#include "framework/input.h"
+#include "world.h"
+#include "entityMesh.h"
+
 #include "player.h"
+#include "framework/entities/entity.h"
 
 enum CameraMode {
 	FREE_CAMERA,
