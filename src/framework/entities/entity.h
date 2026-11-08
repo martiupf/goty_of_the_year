@@ -10,7 +10,12 @@ class Entity {
 public:
 
 	Entity() {}; 			// Constructor
-	virtual ~Entity() {}; 	// Destructor
+	virtual ~Entity() {
+		for (Entity* child : children)
+			delete child;
+
+		children.clear();
+	}; 	// Destructor
 
 	std::string name;
 

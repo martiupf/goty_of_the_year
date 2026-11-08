@@ -9,6 +9,8 @@
 
 bool SceneParser::parse(const char* filename, Entity* root)
 {
+	meshes_to_load.clear();
+
 	std::cout << " + Scene loading: " << filename << "..." << std::endl;
 
 	std::ifstream file(filename);
@@ -65,6 +67,10 @@ bool SceneParser::parse(const char* filename, Entity* root)
 		}
 		else {
 			Mesh* mesh = Mesh::Get(mesh_name.c_str());
+			if (!mesh) {
+				std::cerr << "Error loading mesh: " << mesh_name << std::endl;
+				continue;
+			}
 			new_entity = new EntityMesh(mesh, mat);
 		}
 

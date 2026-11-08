@@ -1,23 +1,23 @@
 #pragma once
 
-#include "framework/includes.h"
-#include "framework/camera.h"
-#include "framework/utils.h"
-#include "graphics/mesh.h"
+
+#include "framework/entities/entity.h"
+#include "game/entityMesh.h"
 
 
 //Para Pedro: necesitamos que esto herede de entity
-class Player
+class Player : public Entity
 {
 public:
-	Vector3 position;
-	Vector3 velocity;
+
+	EntityMesh* visual;
+
+	float velocity;
 	float rotation;
 
 	Mesh* mesh;
 
-	Player(Vector3 start_position);
-
-	void update(double seconds_elapsed);
-	void render();
+	Player(Vector3 start_position, Mesh* mesh);
+	void move(Vector3 direction, float delta_time);
+	void update(double delta_time);
 };

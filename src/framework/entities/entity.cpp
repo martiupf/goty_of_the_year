@@ -59,3 +59,7 @@ float Entity::distance(Entity* e)
 {
 	return model.getTranslation().distance(e->model.getTranslation());
 }
+/*
+void Entity::destroy() {
+
+}*/
