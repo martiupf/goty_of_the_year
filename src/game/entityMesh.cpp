@@ -16,6 +16,36 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
 void EntityMesh::render(Camera* camera) {
     if (!mesh) return;
 
+    BoundingBox box = transformBoundingBox(
+        getGlobalMatrix(),
+        mesh->box
+    );
+
+    float distance = 50.0f;
+    Vector3 center = box.center;
+
+    // Discard objects far away from the camera
+    if (camera->eye.distance(center) > distance)
+        return;
+
+
+    float sphere_radius = box.halfsize.length();
+
+    // Discard objects whose bounding sphere 
+    // is not inside the camera frustum
+    if (camera->testSphereInFrustum(center,
+        sphere_radius) != CLIP_INSIDE)
+        return;
+
+
+    // Testing box
+
+    // Discard objects whose bounding box is completely outside the camera frustum
+    if (camera->testBoxInFrustum(center,
+        box.halfsize) == CLIP_OUTSIDE)
+        return;
+
+
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
