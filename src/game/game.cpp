@@ -44,7 +44,7 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	loadMap("data/myscene.scene");
 	World* world = World::getInstance();
-	Mesh* player_mesh = Mesh::Get("data/scene/Cubo.002/Cubo.002.obj"); // se podrian poner dos meshes diferentes
+	Mesh* player_mesh = Mesh::Get("data/cuidado/Untitled.obj"); // se podrian poner dos meshes diferentes
 
 	player1 = new Player(Vector3(-3, 0, 0), player_mesh);
 	player2 = new Player(Vector3(3, 0, 0), player_mesh);
