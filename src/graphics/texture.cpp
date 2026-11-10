@@ -192,7 +192,7 @@ bool Texture::load(const char* filename, bool mipmaps, bool wrap, unsigned int t
 	if (ext == ".tga" || ext == ".TGA")
 		found = image->loadTGA(filename);
 	else if (ext == ".png" || ext == ".PNG")
-		found = image->loadPNG(filename, true);
+		found = image->loadPNG(filename, false);
 	else
 	{
 		std::cout << "[ERROR]: unsupported format" << std::endl;

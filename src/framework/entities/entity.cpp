@@ -63,3 +63,13 @@ float Entity::distance(Entity* e)
 void Entity::destroy() {
 
 }*/
+
+AABB Entity::getAABB()
+{
+	Vector3 pos = getGlobalMatrix().getTranslation();
+
+	AABB world_aabb;
+	world_aabb.min = pos + local_aabb.min;
+	world_aabb.max = pos + local_aabb.max;
+	return world_aabb;
+}

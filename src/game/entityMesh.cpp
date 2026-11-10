@@ -10,6 +10,12 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
     if (!this->material.diffuse) {
         this->material.diffuse = Texture::Get("data/textures/missing.tga");
     }
+    if (mesh) {
+        local_aabb.min = mesh->aabb_min;
+        local_aabb.max = mesh->aabb_max;
+        collider_type = ColliderType::AABB_BOX;
+        is_collidable = true;
+    }
 }
 
 //Render the mesh in the world
