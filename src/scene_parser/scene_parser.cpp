@@ -6,6 +6,8 @@
 #include "framework/utils.h"
 
 #include <fstream>
+#include <algorithm>
+#include <cctype>
 
 bool SceneParser::parse(const char* filename, Entity* root)
 {
@@ -79,6 +81,20 @@ bool SceneParser::parse(const char* filename, Entity* root)
 		}
 
 		new_entity->name = data.first;
+
+		std::string name_lower = data.first;
+		std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+
+		//Name of the object must have the aabb_x form
+		if (name_lower.starts_with("aabb") != std::string::npos)
+		{
+			new_entity->is_collidable = true;
+			new_entity->collider_type = ColliderType::AABB_BOX;
+			// local_aabb ya se llena automáticamente en el constructor de EntityMesh (mesh->box)
+		}
+		else {
+			new_entity->is_collidable = false; // Elemento puramente decorativo
+		}
 
 		// Create instanced entity
 		if (render_data.models.size() > 1) {

@@ -13,8 +13,6 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
     if (mesh) {
         local_aabb.min = mesh->aabb_min;
         local_aabb.max = mesh->aabb_max;
-        collider_type = ColliderType::AABB_BOX;
-        is_collidable = true;
     }
 }
 

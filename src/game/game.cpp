@@ -42,7 +42,7 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	camera_mode = FREE_CAMERA;
 
-	loadMap("data/myscene.scene");
+	loadMap("data/testing_map.scene");
 	World* world = World::getInstance();
 	Mesh* player_mesh = Mesh::Get("data/cuidado/Untitled.obj"); // se podrian poner dos meshes diferentes
 

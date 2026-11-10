@@ -9,7 +9,8 @@ enum class ColliderType {
 	AABB_BOX,
 	SPHERE,
 	OBB_BOX,
-	MESH
+	MESH,
+	NO_COLLISION
 };
 
 struct AABB {
@@ -30,7 +31,7 @@ public:
 	}; 	// Destructor
 
 	std::string name;
-	ColliderType collider_type;
+	ColliderType collider_type = ColliderType::NO_COLLISION;
 	AABB local_aabb;
 	bool is_collidable = false;
 	Matrix44 model;
