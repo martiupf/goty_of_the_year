@@ -1,4 +1,6 @@
 #include "player.h"
+#include "collider.h"
+#include "world.h"
 #include <cmath>
 
 Player::Player(Vector3 start_position, Mesh* mesh)
@@ -23,15 +25,62 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 void Player::move(Vector3 direction, float delta_time) {
     float length = sqrt(direction.x * direction.x + direction.z * direction.z);
 
-    if (length > 0.0f) {
-        direction.x /= length;
-        direction.z /= length;
+    if (length <= 0.0f)
+        return;
 
-        Vector3 current_position = model.getTranslation();
+    direction.x /= length;
+    direction.z /= length;
 
-        current_position = current_position + direction * delta_time * velocity;
-        model.setTranslation(current_position);
+    Vector3 current_position = model.getTranslation();
+    // debug
+    if (!std::isfinite(current_position.x) ||
+        !std::isfinite(current_position.y) ||
+        !std::isfinite(current_position.z)) {
+
+        std::cout << "ERROR: posicion actual invalida" << std::endl;
+        return;
     }
+    //
+
+    Vector3 new_position = current_position + direction * delta_time * velocity;
+    // debug
+    if (!std::isfinite(new_position.x) ||
+        !std::isfinite(new_position.y) ||
+        !std::isfinite(new_position.z)) {
+
+            std::cout << "ERROR: nueva posicion invalida" << std::endl;
+            return;
+    }
+    //
+    model.setTranslation(new_position);
+    //debug
+    std::cout << "Posicion nueva: "
+        << new_position.x << ", "
+        << new_position.y << ", "
+        << new_position.z << std::endl;
+    //
+    // Recorre la lista de map_entities del world para ver si colisiona con alguna 
+    
+    bool has_collided = false;
+    for (Entity* map_entity : World::getInstance()->root->children) {
+        if (checkCollision(map_entity)) {
+            //debug
+            std::cout << "COLISION con entidad: " << map_entity->name 
+                << " min.x: " << map_entity->getAABB().min.x 
+                << " min.y: " << map_entity->getAABB().min.y
+                << " min.z: " << map_entity->getAABB().min.z
+                << " max.x: " << map_entity->getAABB().max.x
+                << " max.y: " << map_entity->getAABB().max.y
+                << " max.z: " << map_entity->getAABB().max.z
+                << std::endl;
+            //
+            has_collided = true;
+            break;
+        }
+    }
+
+    if (has_collided)
+        model.setTranslation(current_position);
 }
 
 void Player::update(double delta_time)
@@ -79,13 +128,6 @@ void Player::render(Camera* camera)
     glEnd();
 
     glColor3f(1.0f, 1.0f, 1.0f); // Restablecer color base
-}
-
-bool testAABBvsAABB(const AABB& a, const AABB& b)
-{
-    return (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
-        (a.min.y <= b.max.y && a.max.y >= b.min.y) &&
-        (a.min.z <= b.max.z && a.max.z >= b.min.z);
 }
 
 bool Player::checkCollision(Entity* map_entity)
