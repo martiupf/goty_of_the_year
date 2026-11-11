@@ -1,3 +1,4 @@
+
 #include "scene_parser.h"
 
 #include "graphics/material.h"
@@ -8,108 +9,144 @@
 #include <fstream>
 #include <algorithm>
 #include <cctype>
+#include <iostream>
+#include <cstdlib>
 
 bool SceneParser::parse(const char* filename, Entity* root)
 {
-	meshes_to_load.clear();
+    meshes_to_load.clear();
 
-	std::cout << " + Scene loading: " << filename << "..." << std::endl;
+    std::cout << " + Scene loading: "
+        << filename << "..." << std::endl;
 
-	std::ifstream file(filename);
+    std::ifstream file(filename);
 
-	if (!file.good()) {
-		std::cerr << "Scene [ERROR]" << " File not found!" << std::endl;
-		return false;
-	}
+    if (!file.good()) {
+        std::cerr << "Scene [ERROR] File not found!"
+            << std::endl;
+        return false;
+    }
 
-	std::string scene_info, mesh_name, model_data;
-	file >> scene_info; file >> scene_info;
-	int mesh_count = 0;
+    std::string scene_info;
+    std::string mesh_name;
+    std::string model_data;
 
-	// Read file line by line and store mesh path and model info in separated variables
-	while (file >> mesh_name >> model_data)
-	{
-		if (mesh_name[0] == '#')
-			continue;
+    file >> scene_info;
+    file >> scene_info;
 
-		// Get all 16 matrix floats
-		std::vector<std::string> tokens = tokenize(model_data, ",");
+    int mesh_count = 0;
 
-		// Fill matrix converting chars to floats
-		Matrix44 model;
-		for (int t = 0; t < tokens.size(); ++t) {
-			model.m[t] = (float)atof(tokens[t].c_str());
-		}
+    // Leer los objetos de la escena.
+    while (file >> mesh_name >> model_data)
+    {
+        if (mesh_name.empty() || mesh_name[0] == '#')
+            continue;
 
-		// Add model to mesh list (might be instanced!)
-		sRenderData& render_data = meshes_to_load[mesh_name];
-		render_data.models.push_back(model);
-		mesh_count++;
-	}
+        // Obtener los 16 valores de la matriz.
+        std::vector<std::string> tokens =
+            tokenize(model_data, ",");
 
-	// Iterate through meshes loaded and create corresponding entities
-	for (auto data : meshes_to_load) {
+        Matrix44 model;
 
-		mesh_name = "data/" + data.first;
-		sRenderData& render_data = data.second;
+        for (int t = 0; t < tokens.size() && t < 16; ++t) {
+            model.m[t] = (float)atof(tokens[t].c_str());
+        }
 
-		// No transforms, nothing to do here
-		if (render_data.models.empty())
-			continue;
+        // Agrupar objetos que utilizan la misma malla.
+        sRenderData& render_data = meshes_to_load[mesh_name];
 
-		Material mat = render_data.material;
-		EntityMesh* new_entity = nullptr;
+        render_data.models.push_back(model);
 
-		size_t tag = data.first.find("@tag");
+        mesh_count++;
+    }
 
-		if (tag != std::string::npos) {
-			Mesh* mesh = Mesh::Get("...");
-			// Create a different type of entity
-			// new_entity = new ...
-		}
-		else {
-			Mesh* mesh = Mesh::Get(mesh_name.c_str());
-			if (!mesh) {
-				std::cerr << "Error loading mesh: " << mesh_name << std::endl;
-				continue;
-			}
-			new_entity = new EntityMesh(mesh, mat);
-		}
+    // Crear las entidades.
+    for (auto data : meshes_to_load)
+    {
+        mesh_name = "data/" + data.first;
 
-		if (!new_entity) {
-			continue;
-		}
+        sRenderData& render_data = data.second;
 
-		new_entity->name = data.first;
+        if (render_data.models.empty())
+            continue;
 
-		std::string name_lower = data.first;
-		std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+        Material mat = render_data.material;
 
-		//Name of the object must have the aabb_x form
-		if (name_lower.starts_with("aabb") != std::string::npos)
-		{
-			new_entity->is_collidable = true;
-			new_entity->collider_type = ColliderType::AABB_BOX;
-			// local_aabb ya se llena automáticamente en el constructor de EntityMesh (mesh->box)
-		}
-		else {
-			new_entity->is_collidable = false; // Elemento puramente decorativo
-		}
+        EntityMesh* new_entity = nullptr;
 
-		// Create instanced entity
-		if (render_data.models.size() > 1) {
-			new_entity->isInstanced = true;
-			new_entity->models = render_data.models; // Add all instances
-		}
-		// Create normal entity
-		else {
-			new_entity->model = render_data.models[0];
-		}
+        Mesh* mesh = Mesh::Get(mesh_name.c_str());
 
-		// Add entity to scene root
-		root->addChild(new_entity);
-	}
+        if (!mesh) {
+            std::cerr << "Error loading mesh: "
+                << mesh_name << std::endl;
+            continue;
+        }
 
-	std::cout << "Scene [OK]" << " Meshes added: " << mesh_count << std::endl;
-	return true;
+        new_entity = new EntityMesh(mesh, mat);
+
+        if (!new_entity)
+            continue;
+
+        // Guardar el nombre original.
+        new_entity->name = data.first;
+
+        // Convertir el nombre a minúsculas.
+        std::string name_lower = data.first;
+
+        std::transform(
+            name_lower.begin(),
+            name_lower.end(),
+            name_lower.begin(),
+            [](unsigned char c) {
+                return (char)std::tolower(c);
+            }
+        );
+
+        // Detectar objetos colisionables.
+        if (name_lower.find("aabb") != std::string::npos)
+        {
+            new_entity->is_collidable = true;
+            new_entity->collider_type =
+                ColliderType::AABB_BOX;
+
+            std::cout << "[COLLIDER] "
+                << data.first
+                << " -> AABB"
+                << std::endl;
+        }
+        else
+        {
+            new_entity->is_collidable = false;
+            new_entity->collider_type =
+                ColliderType::NO_COLLISION;
+        }
+
+        // Mostrar el resultado DESPUÉS de asignarlo.
+        std::cout << "[SCENE ENTITY] "
+            << "[" << new_entity->name << "]"
+            << " | Collidable: "
+            << new_entity->is_collidable
+            << " | Collider type: "
+            << (int)new_entity->collider_type
+            << std::endl;
+
+        // Configurar instancing.
+        if (render_data.models.size() > 1)
+        {
+            new_entity->isInstanced = true;
+            new_entity->models = render_data.models;
+        }
+        else
+        {
+            new_entity->model = render_data.models[0];
+        }
+
+        // Añadir la entidad al escenario.
+        root->addChild(new_entity);
+    }
+
+    std::cout << "Scene [OK] Meshes added: "
+        << mesh_count << std::endl;
+
+    return true;
 }

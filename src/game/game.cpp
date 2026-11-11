@@ -45,8 +45,8 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	World* world = World::getInstance();
 	Mesh* player_mesh = Mesh::Get("data/cuidado/Untitled.obj"); // se podrian poner dos meshes diferentes
 
-	player1 = new Player(Vector3(-3, 15, 0), player_mesh);
-	player2 = new Player(Vector3(3, 1, 0), player_mesh);
+	player1 = new Player(Vector3(-3, 2, 0), player_mesh);
+	player2 = new Player(Vector3(3, 0.0, 0), player_mesh);
 
 	world->root->addChild(player1);
 	world->root->addChild(player2);
@@ -139,22 +139,26 @@ void Game::update(double seconds_elapsed)
 		// PLAYER 1
 		Vector3 direction1(0, 0, 0);
 		// PROVISIONAL: movimiento WASD
-		if (Input::isKeyPressed(SDL_SCANCODE_W)) direction1.z -= 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_S)) direction1.z += 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_A)) direction1.x -= 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_D)) direction1.x += 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_W)) direction1.z += 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_S)) direction1.z -= 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_A)) direction1.x += 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_D)) direction1.x -= 1;
 
 		player1->move(direction1, seconds_elapsed);
+
+		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) player1->jump(seconds_elapsed);
 
 		// PLAYER 2
 		Vector3 direction2(0, 0, 0);
 		// PROVISIONAL: movimiento flechas
-		if (Input::isKeyPressed(SDL_SCANCODE_UP)) direction2.z -= 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_DOWN)) direction2.z += 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_LEFT)) direction2.x -= 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_RIGHT)) direction2.x += 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_UP)) direction2.z += 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_DOWN)) direction2.z -= 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_LEFT)) direction2.x += 1;
+		if (Input::isKeyPressed(SDL_SCANCODE_RIGHT)) direction2.x -= 1;
 
 		player2->move(direction2, seconds_elapsed);
+
+		if (Input::isKeyPressed(SDL_SCANCODE_0)) player2->jump(seconds_elapsed);
 
 		updateThirdPersonCamera(camera1, player1);
 		updateThirdPersonCamera(camera2, player2);
@@ -219,7 +223,7 @@ void Game::setMouseLocked(bool must_lock)
 
 void Game::updateThirdPersonCamera(Camera* camera, Player* player) {
 	Vector3 target = player->model.getTranslation();
-	Vector3 offset(0.0f, 6.0f, 10.0f);
+	Vector3 offset(0.0f, 6.0f, -10.0f);
 	Vector3 camera_position = target + offset;
 	// std::cout << "Target: " << target.x << ", " << target.y << ", "<< target.z << std::endl;
 	

@@ -1,6 +1,6 @@
-# Blender 5.3.0 Release Candidate
+# Blender 5.2.3 LTS
 # www.blender.org
-mtllib Cubo.mtl
+mtllib aabb_Cubo.mtl
 o aabb_Cubo
 v -10.000000 10.000000 1.000000
 v -10.000000 10.000000 0.000000

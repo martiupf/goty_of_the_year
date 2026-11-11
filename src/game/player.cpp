@@ -1,6 +1,7 @@
 #include "player.h"
 #include "collider.h"
 #include "world.h"
+#include "game.h"
 #include <cmath>
 
 Player::Player(Vector3 start_position, Mesh* mesh)
@@ -10,6 +11,10 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     
     velocity = 5.0f;
     rotation = 0.0f;
+
+    vertical_velocity = 0.0f;
+    gravity = 10.0f;
+    is_grounded = false;
 
     is_collidable = true;
     collider_type = ColliderType::AABB_BOX;
@@ -22,71 +27,105 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     addChild(visual);
 }
 
+void Player::update(float delta_time)
+{
+    applyGravity(delta_time);
+    Entity::update(delta_time);
+}
+
 void Player::move(Vector3 direction, float delta_time) {
     float length = sqrt(direction.x * direction.x + direction.z * direction.z);
 
-    if (length <= 0.0f)
-        return;
-
-    direction.x /= length;
-    direction.z /= length;
-
-    Vector3 current_position = model.getTranslation();
-    // debug
-    if (!std::isfinite(current_position.x) ||
-        !std::isfinite(current_position.y) ||
-        !std::isfinite(current_position.z)) {
-
-        std::cout << "ERROR: posicion actual invalida" << std::endl;
-        return;
+    if (length > 0.0f) {
+        direction.x /= length;
+        direction.z /= length;
     }
-    //
-
-    Vector3 new_position = current_position + direction * delta_time * velocity;
-    // debug
-    if (!std::isfinite(new_position.x) ||
-        !std::isfinite(new_position.y) ||
-        !std::isfinite(new_position.z)) {
-
-            std::cout << "ERROR: nueva posicion invalida" << std::endl;
-            return;
+    else {
+        direction.x = 0.0f;
+        direction.z = 0.0f;
     }
-    //
-    model.setTranslation(new_position);
-    //debug
-    std::cout << "Posicion nueva: "
-        << new_position.x << ", "
-        << new_position.y << ", "
-        << new_position.z << std::endl;
-    //
-    // Recorre la lista de map_entities del world para ver si colisiona con alguna 
-    
-    bool has_collided = false;
+
+    Vector3 movement = direction * velocity * delta_time;
+
+    // eje X
+    Vector3 position = model.getTranslation();
+    model.setTranslation(position + Vector3(movement.x, 0.0f, 0.0f));
+    bool collision_x = false;
+
     for (Entity* map_entity : World::getInstance()->root->children) {
+        if (map_entity == this || !map_entity->is_collidable)
+            continue;
+
         if (checkCollision(map_entity)) {
-            //debug
-            std::cout << "COLISION con entidad: " << map_entity->name 
-                << " min.x: " << map_entity->getAABB().min.x 
-                << " min.y: " << map_entity->getAABB().min.y
-                << " min.z: " << map_entity->getAABB().min.z
-                << " max.x: " << map_entity->getAABB().max.x
-                << " max.y: " << map_entity->getAABB().max.y
-                << " max.z: " << map_entity->getAABB().max.z
-                << std::endl;
-            //
-            has_collided = true;
+            collision_x = true;
             break;
         }
     }
 
-    if (has_collided)
-        model.setTranslation(current_position);
+    if (collision_x)
+        model.setTranslation(position); //volver a la posición anterior
+
+    // eje Z
+    position = model.getTranslation();
+
+    model.setTranslation(position + Vector3(0.0f, 0.0f, movement.z));
+    bool collision_z = false;
+
+    for (Entity* map_entity : World::getInstance()->root->children) {
+        if (map_entity == this || !map_entity->is_collidable)
+            continue;
+
+        if (checkCollision(map_entity)) {
+            collision_z = true;
+            break;
+        }
+    }
+
+    if (collision_z)
+        model.setTranslation(position);
 }
 
-void Player::update(double delta_time)
-{
-    Entity::update(delta_time);
+void Player::jump(float delta_time) {
+
+    if (is_grounded) {
+        vertical_velocity += 10;
+    }
+
 }
+
+void Player::applyGravity(float delta_time)
+{
+    vertical_velocity -= gravity * (float)delta_time;
+    float movement_y = vertical_velocity * (float)delta_time;
+
+    Vector3 position = model.getTranslation();
+    model.setTranslation(position + Vector3(0.0f, movement_y, 0.0f));
+    bool collision_y = false;
+
+    for (Entity* map_entity : World::getInstance()->root->children){
+        if (map_entity == this || !map_entity->is_collidable)
+            continue;
+
+        if (checkCollision(map_entity)){
+            collision_y = true;
+            break;
+        }
+    }
+
+    if (collision_y) {
+        model.setTranslation(position);
+
+        if (movement_y < 0.0f)
+            is_grounded = true;
+
+        vertical_velocity = 0.0f;
+    }
+    else{
+        is_grounded = false;
+    }
+}
+
+
 
 //This render function will be eliminated when animations are implemented.
 //This is only to see the hitbox visually for debugging
