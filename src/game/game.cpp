@@ -49,8 +49,8 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	camera2->setPerspective(70.f, half_aspect, 0.1f, 10000.f);
 
 	// Load one texture using the Texture Manager
-	texture = Texture::Get("data/textures/texture.tga");
-	shader = Shader::Get("data/shaders/basic.vs", "data/shaders/flat.fs");
+	texture = Texture::Get("data/textures/missing.tga");
+	shader = Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
 
 	mesh = Mesh::Get("data/meshes/testing_map.obj");
 
@@ -74,22 +74,26 @@ void Game::renderScene(Camera* camera)
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 
-	// CAMBIADO: Quitar m.rotate() para mantener el mapa estático en el origen (0,0,0)
 	Matrix44 m;
 
 	if (shader && mesh)
 	{
 		shader->enable();
-		shader->setUniform("u_color", Vector4(1, 0, 0, 1));
+		shader->setUniform("u_color", Vector4(1, 1, 1, 1));
 		shader->setUniform("u_viewprojection", camera->viewprojection_matrix);
 		shader->setUniform("u_model", m);
 
-		// REMOVIDO: u_texture y u_time (flat.fs no requiere textura ni tiempo)
+		if (texture) {
+			shader->setUniform("u_texture", texture, 0);
+		}
+		shader->setUniform("u_time", time);
 
 		mesh->render(GL_TRIANGLES);
 
 		shader->disable();
 	}
+
+	// REMOVIDO: Sin llamadas a players, solo render del escenario
 
 	drawGrid();
 }
