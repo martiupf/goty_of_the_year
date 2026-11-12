@@ -165,20 +165,40 @@ void Game::update(double seconds_elapsed)
 
 		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) player1->jump(seconds_elapsed);
 
-		// PLAYER 2
-		Vector3 direction2(0, 0, 0);
-		// PROVISIONAL: movimiento flechas
-		if (Input::isKeyPressed(SDL_SCANCODE_UP)) direction2.z += 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_DOWN)) direction2.z -= 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_LEFT)) direction2.x += 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_RIGHT)) direction2.x -= 1;
+		// PLAYER 2 (movimiento relativo a cam2_yaw)
+		float input2_z = 0.0f;
+		float input2_x = 0.0f;
 
+		if (Input::gamepads[0].connected)
+		{
+			float deadzone = 0.2f;
+			float sensitivity = 2.5f; // radianes por segundo
+
+			float rx = Input::gamepads[0].axis[RIGHT_ANALOG_X];
+			float ry = Input::gamepads[0].axis[RIGHT_ANALOG_Y];
+
+			if (fabs(rx) > deadzone) cam2_yaw += rx * sensitivity * (float)seconds_elapsed;
+			if (fabs(ry) > deadzone) cam2_pitch += ry * sensitivity * (float)seconds_elapsed;
+
+			if (cam2_pitch < 0.05f) cam2_pitch = 0.05f;
+			if (cam2_pitch > 1.4f)  cam2_pitch = 1.4f;
+
+			float axis_x = Input::gamepads[0].axis[LEFT_ANALOG_X];
+			float axis_y = Input::gamepads[0].axis[LEFT_ANALOG_Y];
+
+			if (fabs(axis_y) > deadzone) input2_z = -axis_y;
+			if (fabs(axis_x) > deadzone) input2_x = -axis_x;
+
+			if (Input::gamepads[0].button[A_BUTTON]) player2->jump(seconds_elapsed);
+		}
+
+		Vector3 forward2(-sinf(cam2_yaw), 0.0f, cosf(cam2_yaw));
+		Vector3 left2(cosf(cam2_yaw), 0.0f, sinf(cam2_yaw));
+
+		Vector3 direction2 = (forward2 * input2_z) + (left2 * input2_x);
 		player2->move(direction2, seconds_elapsed);
 
-		if (Input::isKeyPressed(SDL_SCANCODE_0)) player2->jump(seconds_elapsed);
-
-		updateOrbitCamera(camera1, player1);
-		updateThirdPersonCamera(camera2, player2);
+		updateOrbitCamera();
 	}
 }
 
@@ -246,15 +266,22 @@ void Game::updateThirdPersonCamera(Camera* camera, Player* player) {
 	camera->lookAt(camera_position, target, Vector3(0.0f, 1.0f, 0.0f));
 }
 
-void Game::updateOrbitCamera(Camera* camera, Player* player) {
-	Vector3 target = player->model.getTranslation() + Vector3(0.0f, 2.0f, 0.0f);
+void Game::updateOrbitCamera() {
+	Vector3 target1 = player1->model.getTranslation() + Vector3(0.0f, 2.0f, 0.0f);
+	Vector3 target2 = player2->model.getTranslation() + Vector3(0.0f, 2.0f, 0.0f);
 
 	float distance = 11.0f;
-	Vector3 offset;
-	offset.x = distance * cosf(cam1_pitch) * sinf(cam1_yaw);
-	offset.y = distance * sinf(cam1_pitch);
-	offset.z = -distance * cosf(cam1_pitch) * cosf(cam1_yaw);
+	Vector3 offset1;
+	offset1.x = distance * cosf(cam1_pitch) * sinf(cam1_yaw);
+	offset1.y = distance * sinf(cam1_pitch);
+	offset1.z = -distance * cosf(cam1_pitch) * cosf(cam1_yaw);
+	Vector3 offset2;
+	offset2.x = distance * cosf(cam2_pitch) * sinf(cam2_yaw);
+	offset2.y = distance * sinf(cam2_pitch);
+	offset2.z = -distance * cosf(cam2_pitch) * cosf(cam2_yaw);
 
-	Vector3 camera_position = target + offset;
-	camera->lookAt(camera_position, target, Vector3(0.0f, 1.0f, 0.0f));
+	Vector3 camera_position = target1 + offset1;
+	camera1->lookAt(camera_position, target1, Vector3(0.0f, 1.0f, 0.0f));
+	camera_position = target2 + offset2;
+	camera2->lookAt(camera_position, target2, Vector3(0.0f, 1.0f, 0.0f));
 }
