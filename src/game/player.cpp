@@ -39,6 +39,9 @@ void Player::move(Vector3 direction, float delta_time) {
     if (length > 0.0f) {
         direction.x /= length;
         direction.z /= length;
+
+        // 1. Calculamos hacia qué ángulo debe mirar según el movimiento
+        target_yaw = -atan2f(direction.x, direction.z);
     }
     else {
         direction.x = 0.0f;
@@ -63,11 +66,10 @@ void Player::move(Vector3 direction, float delta_time) {
     }
 
     if (collision_x)
-        model.setTranslation(position); //volver a la posición anterior
+        model.setTranslation(position);
 
     // eje Z
     position = model.getTranslation();
-
     model.setTranslation(position + Vector3(0.0f, 0.0f, movement.z));
     bool collision_z = false;
 
@@ -83,6 +85,21 @@ void Player::move(Vector3 direction, float delta_time) {
 
     if (collision_z)
         model.setTranslation(position);
+
+    // 2. Interpolación suave del giro (estilo Fall Guys)
+    float diff = target_yaw - current_yaw;
+    while (diff > 3.14159265f)  diff -= 6.28318530f;
+    while (diff < -3.14159265f) diff += 6.28318530f;
+    
+    float turn_speed = 50.0f;
+    float t = turn_speed * delta_time;
+    if (t > 1.0f) t = 1.0f;
+    current_yaw += diff * t;
+
+    // 3. Reconstruimos la matriz final con su posición válida y su rotación
+    Vector3 final_pos = model.getTranslation();
+    model.setTranslation(final_pos.x, final_pos.y, final_pos.z);
+    model.rotate(current_yaw, Vector3(0.0f, 1.0f, 0.0f));
 }
 
 void Player::jump(float delta_time) {
@@ -124,8 +141,6 @@ void Player::applyGravity(float delta_time)
         is_grounded = false;
     }
 }
-
-
 
 //This render function will be eliminated when animations are implemented.
 //This is only to see the hitbox visually for debugging

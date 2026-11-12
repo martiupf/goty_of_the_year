@@ -42,6 +42,8 @@ public:
 
 	//n
 	Player* player1;
+	float cam1_yaw = 0.0f;
+	float cam1_pitch = 0.5f;
 	Player* player2;
 	CameraMode camera_mode;
 
@@ -70,6 +72,8 @@ public:
 	void onGamepadButtonDown(SDL_JoyButtonEvent event);
 	void onGamepadButtonUp(SDL_JoyButtonEvent event);
 	void onResize(int width, int height);
+
+	void updateOrbitCamera(Camera* camera, Player* player);
 
 	//n
 	void updateThirdPersonCamera(Camera* camera, Player* player);

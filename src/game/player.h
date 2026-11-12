@@ -14,6 +14,9 @@ public:
 
 	Mesh* mesh;
 
+
+	float current_yaw = 0.0f;
+	float target_yaw = 0.0f;
 	float velocity;
 	float rotation;
 

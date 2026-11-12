@@ -22,7 +22,8 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	frame = 0;
 	time = 0.0f;
 	elapsed_time = 0.0f;
-	mouse_locked = false;
+	mouse_locked = true;
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
@@ -135,14 +136,30 @@ void Game::update(double seconds_elapsed)
 	}
 
 	else if (camera_mode == THIRD_PERSON) {
-		
-		// PLAYER 1
-		Vector3 direction1(0, 0, 0);
-		// PROVISIONAL: movimiento WASD
-		if (Input::isKeyPressed(SDL_SCANCODE_W)) direction1.z += 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_S)) direction1.z -= 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_A)) direction1.x += 1;
-		if (Input::isKeyPressed(SDL_SCANCODE_D)) direction1.x -= 1;
+		if (Input::isMousePressed(SDL_BUTTON_LEFT) || mouse_locked)
+		{
+			float sensitivity = 0.05f;
+			cam1_yaw -= Input::mouse_delta.x * 0.01f * sensitivity;
+			cam1_pitch -= Input::mouse_delta.y * 0.01f * sensitivity;
+
+			if (cam1_pitch < 0.05f) cam1_pitch = 0.05f;
+			if (cam1_pitch > 1.4f)  cam1_pitch = 1.4f;
+		}
+		// PLAYER 1 (movimiento relativo a cam1_yaw)
+		float input_z = 0.0f;
+		float input_x = 0.0f;
+
+		if (Input::isKeyPressed(SDL_SCANCODE_W)) input_z += 1.0f;
+		if (Input::isKeyPressed(SDL_SCANCODE_S)) input_z -= 1.0f;
+		if (Input::isKeyPressed(SDL_SCANCODE_A)) input_x += 1.0f;
+		if (Input::isKeyPressed(SDL_SCANCODE_D)) input_x -= 1.0f;
+
+		// Ejes horizontales de la cámara en el plano XZ
+		Vector3 forward(-sinf(cam1_yaw), 0.0f, cosf(cam1_yaw));
+		Vector3 left(cosf(cam1_yaw), 0.0f, sinf(cam1_yaw));
+
+		// Dirección final en coordenadas del mundo (se normaliza dentro de move)
+		Vector3 direction1 = (forward * input_z) + (left * input_x);
 
 		player1->move(direction1, seconds_elapsed);
 
@@ -160,7 +177,7 @@ void Game::update(double seconds_elapsed)
 
 		if (Input::isKeyPressed(SDL_SCANCODE_0)) player2->jump(seconds_elapsed);
 
-		updateThirdPersonCamera(camera1, player1);
+		updateOrbitCamera(camera1, player1);
 		updateThirdPersonCamera(camera2, player2);
 	}
 }
@@ -222,10 +239,22 @@ void Game::setMouseLocked(bool must_lock)
 }
 
 void Game::updateThirdPersonCamera(Camera* camera, Player* player) {
-	Vector3 target = player->model.getTranslation();
+	Vector3 target = player->model.getTranslation() + Vector3(0.0f,2.0f,0.0f);
 	Vector3 offset(0.0f, 6.0f, -10.0f);
 	Vector3 camera_position = target + offset;
-	// std::cout << "Target: " << target.x << ", " << target.y << ", "<< target.z << std::endl;
 	
+	camera->lookAt(camera_position, target, Vector3(0.0f, 1.0f, 0.0f));
+}
+
+void Game::updateOrbitCamera(Camera* camera, Player* player) {
+	Vector3 target = player->model.getTranslation() + Vector3(0.0f, 2.0f, 0.0f);
+
+	float distance = 11.0f;
+	Vector3 offset;
+	offset.x = distance * cosf(cam1_pitch) * sinf(cam1_yaw);
+	offset.y = distance * sinf(cam1_pitch);
+	offset.z = -distance * cosf(cam1_pitch) * cosf(cam1_yaw);
+
+	Vector3 camera_position = target + offset;
 	camera->lookAt(camera_position, target, Vector3(0.0f, 1.0f, 0.0f));
 }
