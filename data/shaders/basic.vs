@@ -28,7 +28,7 @@ void main()
 	v_color = a_color;
 
 	//store the texture coordinates
-	v_uv = a_uv;
+	v_uv = vec2(a_uv.x, 1.0 - a_uv.y);
 
 	//calcule the position of the vertex using the matrices
 	gl_Position = u_viewprojection * vec4( v_world_position, 1.0 );

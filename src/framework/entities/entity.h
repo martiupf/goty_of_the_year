@@ -5,15 +5,35 @@
 
 class Camera;
 
+enum class ColliderType {
+	AABB_BOX,
+	SPHERE,
+	OBB_BOX,
+	MESH,
+	NO_COLLISION
+};
+
+struct AABB {
+	Vector3 min;
+	Vector3 max;
+};
+
 class Entity {
 
 public:
 
 	Entity() {}; 			// Constructor
-	virtual ~Entity() {}; 	// Destructor
+	virtual ~Entity() {
+		for (Entity* child : children)
+			delete child;
+
+		children.clear();
+	}; 	// Destructor
 
 	std::string name;
-
+	ColliderType collider_type = ColliderType::NO_COLLISION;
+	AABB local_aabb;
+	bool is_collidable = false;
 	Matrix44 model;
 
 	Entity* parent = nullptr;
@@ -30,4 +50,5 @@ public:
 	// Some useful methods
 	Matrix44 getGlobalMatrix();
 	float distance(Entity* e);
+	virtual AABB getAABB();
 };
