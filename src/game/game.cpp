@@ -164,6 +164,7 @@ void Game::update(double seconds_elapsed)
 		player1->move(direction1, seconds_elapsed);
 
 		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) player1->jump(seconds_elapsed);
+		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) player1->dash();
 
 		// PLAYER 2 (movimiento relativo a cam2_yaw)
 		float input2_z = 0.0f;
@@ -190,6 +191,7 @@ void Game::update(double seconds_elapsed)
 			if (fabs(axis_x) > deadzone) input2_x = -axis_x;
 
 			if (Input::gamepads[0].button[A_BUTTON]) player2->jump(seconds_elapsed);
+			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
 		}
 
 		Vector3 forward2(-sinf(cam2_yaw), 0.0f, cosf(cam2_yaw));

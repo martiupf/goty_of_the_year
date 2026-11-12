@@ -29,11 +29,48 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 
 void Player::update(float delta_time)
 {
+    if (dash_cooldown > 0.0f)
+        dash_cooldown -= delta_time;
+
+    if (dash_time > 0.0f) {
+        dash_time -= delta_time;
+
+        float dash_speed = DASH_METERS / DASH_DURATION;
+        Vector3 movement = dash_dir * dash_speed * delta_time;
+
+        // Colisión eje X
+        Vector3 pos = model.getTranslation();
+        model.setTranslation(pos + Vector3(movement.x, 0.0f, 0.0f));
+        for (Entity* map_entity : World::getInstance()->root->children) {
+            if (map_entity != this && map_entity->is_collidable && checkCollision(map_entity)) {
+                model.setTranslation(pos);
+                break;
+            }
+        }
+
+        // Colisión eje Z
+        pos = model.getTranslation();
+        model.setTranslation(pos + Vector3(0.0f, 0.0f, movement.z));
+        for (Entity* map_entity : World::getInstance()->root->children) {
+            if (map_entity != this && map_entity->is_collidable && checkCollision(map_entity)) {
+                model.setTranslation(pos);
+                break;
+            }
+        }
+
+        // Mantener la rotación del modelo
+        Vector3 final_pos = model.getTranslation();
+        model.setTranslation(final_pos.x, final_pos.y, final_pos.z);
+        model.rotate(current_yaw, Vector3(0.0f, 1.0f, 0.0f));
+
+        return; // Sale del update para no aplicar gravedad mientras dura el dash
+    }
     applyGravity(delta_time);
     Entity::update(delta_time);
 }
 
 void Player::move(Vector3 direction, float delta_time) {
+    if (dash_time > 0.0f) return;
     float length = sqrt(direction.x * direction.x + direction.z * direction.z);
 
     if (length > 0.0f) {
@@ -110,6 +147,15 @@ void Player::jump(float delta_time) {
 
 }
 
+void Player::dash() {
+    if (dash_time > 0.0f || dash_cooldown > 0.0f) return;
+
+    dash_time = DASH_DURATION;
+    dash_cooldown = 0.8f;
+    dash_dir = Vector3(-sinf(current_yaw), 0.0f, cosf(current_yaw));
+    vertical_velocity = 0.0f;
+}
+
 void Player::applyGravity(float delta_time)
 {
     vertical_velocity -= gravity * (float)delta_time;
@@ -140,6 +186,9 @@ void Player::applyGravity(float delta_time)
     else{
         is_grounded = false;
     }
+    Vector3 final_pos = model.getTranslation();
+    model.setTranslation(final_pos.x, final_pos.y, final_pos.z);
+    model.rotate(current_yaw, Vector3(0.0f, 1.0f, 0.0f));
 }
 
 //This render function will be eliminated when animations are implemented.
