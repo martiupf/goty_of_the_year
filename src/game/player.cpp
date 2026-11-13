@@ -29,6 +29,18 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 
 void Player::update(float delta_time)
 {
+    if (flash_timer > 0.0f)
+        flash_timer -= delta_time;
+
+    if (ghost_delay > 0.0f) {
+        ghost_delay -= delta_time;
+    }
+    else if (ghost_hp > current_hp) {
+        ghost_hp += (current_hp - ghost_hp) * 6.0f * delta_time;
+        if (ghost_hp - current_hp < 0.1f)
+            ghost_hp = current_hp;
+    }
+
     if (dash_cooldown > 0.0f)
         dash_cooldown -= delta_time;
 
@@ -242,4 +254,15 @@ bool Player::checkCollision(Entity* map_entity)
     }
 
     return false;
+}
+
+void Player::takeDamage(float amount)
+{
+    if (current_hp <= 0.0f) return;
+
+    current_hp -= amount;
+    if (current_hp < 0.0f) current_hp = 0.0f;
+
+    ghost_delay = 0.45f; // Espera 0.45s antes de bajar la barra secundaria
+    flash_timer = 0.12f; // Destello y vibración al recibir el golpe
 }

@@ -100,6 +100,8 @@ void Game::render(void)
 	glViewport(0, 0, window_width, window_height);
 	drawText(2, 2, getGPUStats(), Vector3(1, 1, 1), 2);
 
+	renderHUD();
+
 	SDL_GL_SwapWindow(this->window);
 }
 
@@ -286,4 +288,145 @@ void Game::updateOrbitCamera() {
 	camera1->lookAt(camera_position, target1, Vector3(0.0f, 1.0f, 0.0f));
 	camera_position = target2 + offset2;
 	camera2->lookAt(camera_position, target2, Vector3(0.0f, 1.0f, 0.0f));
+}
+
+void Game::drawClippedBar(float x, float y, float full_w, float h, float clip_w,
+	float r_left, float g_left, float b_left,
+	float r_right, float g_right, float b_right,
+	float alpha)
+{
+	if (clip_w <= 0.0f || full_w <= 0.0f || h <= 0.0f) return;
+	if (clip_w > full_w) clip_w = full_w;
+
+	// Color interpolado en el punto exacto donde se corta la vida
+	float t = clip_w / full_w;
+	float r_end = r_left + (r_right - r_left) * t;
+	float g_end = g_left + (g_right - g_left) * t;
+	float b_end = b_left + (b_right - b_left) * t;
+
+	glBegin(GL_QUADS);
+	// Lado izquierdo
+	glColor4f(r_left, g_left, b_left, alpha);
+	glVertex2f(x, y);
+	glVertex2f(x, y + h);
+
+	// Lado derecho (en el corte de la vida actual)
+	glColor4f(r_end, g_end, b_end, alpha);
+	glVertex2f(x + clip_w, y + h);
+	glVertex2f(x + clip_w, y);
+	glEnd();
+}
+
+void Game::renderHealthBar(Player* player, float x, float y, float width, float height, bool invert_gradient)
+{
+	if (!player) return;
+
+	if (player->flash_timer > 0.0f) {
+		x += sinf(player->flash_timer * 90.0f) * 2.0f;
+	}
+
+	float hp_ratio = std::max(0.0f, std::min(1.0f, player->current_hp / player->max_hp));
+	float ghost_ratio = std::max(0.0f, std::min(1.0f, player->ghost_hp / player->max_hp));
+
+	// Capa 1: Sombra paralela
+	drawClippedBar(x, y + (height * 0.12f), width, height, width,
+		0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		0.28f);
+
+	// Capa 2: Fondo vacío rosado
+	float bg_rl = 1.0f, bg_gl = 0.82f, bg_bl = 0.82f;
+	float bg_rr = 1.0f, bg_gr = 0.72f, bg_br = 0.72f;
+	if (invert_gradient) {
+		std::swap(bg_rl, bg_rr);
+		std::swap(bg_gl, bg_gr);
+		std::swap(bg_bl, bg_br);
+	}
+	drawClippedBar(x, y, width, height, width,
+		bg_rl, bg_gl, bg_bl,
+		bg_rr, bg_gr, bg_br,
+		0.92f);
+
+	// Capa 3: Barra fantasma de daño retardado
+	if (ghost_ratio > hp_ratio) {
+		float gh_rl = 1.0f, gh_gl = 0.55f, gh_bl = 0.55f;
+		float gh_rr = 1.0f, gh_gr = 0.65f, gh_br = 0.65f;
+		if (invert_gradient) {
+			std::swap(gh_rl, gh_rr);
+			std::swap(gh_gl, gh_gr);
+			std::swap(gh_bl, gh_br);
+		}
+		drawClippedBar(x, y, width, height, width * ghost_ratio,
+			gh_rl, gh_gl, gh_bl,
+			gh_rr, gh_gr, gh_br,
+			0.75f);
+	}
+
+	// Capa 4: Barra de vida principal
+	// Por defecto: rojo oscuro (izq) -> coral (der)
+	// Si invert_gradient == true: coral (izq) -> rojo oscuro (der)
+	float r_l = 0.82f, g_l = 0.02f, b_l = 0.02f;
+	float r_r = 0.98f, g_r = 0.25f, b_r = 0.25f;
+
+	if (player->flash_timer > 0.0f) {
+		r_l = 1.0f; g_l = 0.65f; b_l = 0.65f;
+		r_r = 1.0f; g_r = 0.85f; b_r = 0.85f;
+	}
+
+	if (invert_gradient) {
+		std::swap(r_l, r_r);
+		std::swap(g_l, g_r);
+		std::swap(b_l, b_r);
+	}
+
+	drawClippedBar(x, y, width, height, width * hp_ratio,
+		r_l, g_l, b_l,
+		r_r, g_r, b_r,
+		1.0f);
+}
+
+void Game::renderHUD()
+{
+	glViewport(0, 0, window_width, window_height);
+
+	glUseProgram(0);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, window_width, window_height, 0, -1, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	float margin = 4.0f;
+	float bar_h = window_height * health_bar_height_ratio;
+
+	// Split-screen VERTICAL (Izquierda / Derecha)
+	float viewport_w = window_width * 0.5f;
+	float bar_w = viewport_w - (margin * 2.0f);
+
+	renderHealthBar(player1, margin, margin, bar_w, bar_h, true);               // Invertido: parte oscura hacia el centro
+	renderHealthBar(player2, viewport_w + margin, margin, bar_w, bar_h, false); // Normal: parte oscura hacia el centro
+
+	// (Si cambias a split-screen HORIZONTAL Arriba/Abajo, usa estas dos líneas con false en ambas):
+	/*
+	float bar_w = window_width - (margin * 2.0f);
+	renderHealthBar(player1, margin, margin, bar_w, bar_h, false);
+	renderHealthBar(player2, margin, (window_height * 0.5f) + margin, bar_w, bar_h, false);
+	*/
+
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+
+	glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
 }

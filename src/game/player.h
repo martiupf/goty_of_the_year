@@ -14,6 +14,13 @@ public:
 
 	Mesh* mesh;
 
+	float max_hp = 100.0f;
+	float current_hp = 100.0f;
+	float ghost_hp = 100.0f;
+	float ghost_delay = 0.0f;
+	float flash_timer = 0.0f;
+
+	void takeDamage(float amount);
 
 	float current_yaw = 0.0f;
 	float target_yaw = 0.0f;

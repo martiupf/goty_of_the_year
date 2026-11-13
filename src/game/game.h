@@ -59,11 +59,19 @@ public:
 	//main functions
 	void render( void );
 	void renderScene(Camera* camera);
+	void renderHUD();
 	void update( double dt );
 
 	bool loadMap(const char* scene_filepath);
 
 	void setMouseLocked(bool must_lock);
+
+	float health_bar_height_ratio = 0.05f;
+	void renderHealthBar(Player* player, float x, float y, float width, float height, bool invert_gradient = false);
+	void drawClippedBar(float x, float y, float full_w, float h, float clip_w,
+		float r_left, float g_left, float b_left,
+		float r_right, float g_right, float b_right,
+		float alpha);
 
 	//events
 	void onKeyDown( SDL_KeyboardEvent event );
