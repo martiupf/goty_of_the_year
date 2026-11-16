@@ -4,6 +4,13 @@
 #include "framework/entities/entity.h"
 #include "game/entityMesh.h"
 
+struct PunchOBB {
+	Vector3 center;
+	Vector3 half_extents;
+	Vector3 right;
+	Vector3 forward;
+};
+
 class Player : public Entity
 {
 public:
@@ -15,10 +22,16 @@ public:
 	Mesh* mesh;
 
 	float max_hp = 100.0f;
-	float current_hp = 50.0f;
+	float current_hp = 100.0f;
 	float ghost_hp = 100.0f;
 	float ghost_delay = 0.0f;
 	float flash_timer = 0.0f;
+
+	float punch_time = 0.0f;
+	float punch_cooldown = 0.0f;
+	const float PUNCH_DURATION = 0.4f;
+	const float PUNCH_RECOVERY = 0.5f;
+	const float PUNCH_DAMAGE = 10.0f;
 
 	void takeDamage(float amount);
 
@@ -47,4 +60,8 @@ public:
 	void render(Camera* camera);
 	//Returns AABB translated to the world
 	bool checkCollision(Entity* map_entity);
+
+	void punch();
+	PunchOBB getPunchOBB();
+	bool testOBBvsAABB(const PunchOBB& obb, const AABB& aabb);
 };

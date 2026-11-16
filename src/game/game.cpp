@@ -167,6 +167,8 @@ void Game::update(double seconds_elapsed)
 
 		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) player1->jump(seconds_elapsed);
 		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) player1->dash();
+		if (Input::isMousePressed(SDL_BUTTON_LEFT)) player1->punch();
+		if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
 
 		// PLAYER 2 (movimiento relativo a cam2_yaw)
 		float input2_z = 0.0f;
@@ -194,6 +196,9 @@ void Game::update(double seconds_elapsed)
 
 			if (Input::gamepads[0].button[A_BUTTON]) player2->jump(seconds_elapsed);
 			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
+			if (Input::gamepads[0].button[X_BUTTON]) player1->punch();
+			if (Input::gamepads[0].button[Y_BUTTON]) player1->punch();
+			if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
 		}
 
 		Vector3 forward2(-sinf(cam2_yaw), 0.0f, cosf(cam2_yaw));
@@ -346,6 +351,7 @@ void Game::renderHealthBar(Player* player, float x, float y, float width, float 
 {
 	if (!player) return;
 
+	// Mantiene el efecto de vibración al recibir daño
 	if (player->flash_timer > 0.0f) {
 		x += sinf(player->flash_timer * 90.0f) * 2.0f;
 	}
@@ -359,9 +365,9 @@ void Game::renderHealthBar(Player* player, float x, float y, float width, float 
 		0.0f, 0.0f, 0.0f,
 		0.28f, mirror);
 
-	// Capa 2: Fondo vacío rosado
-	float bg_rl = 1.0f, bg_gl = 0.82f, bg_bl = 0.82f;
-	float bg_rr = 1.0f, bg_gr = 0.72f, bg_br = 0.72f;
+	// Capa 2: Fondo vacío oscuro (contrasta con la vida, el flash y la barra fantasma)
+	float bg_rl = 0.18f, bg_gl = 0.04f, bg_bl = 0.04f;
+	float bg_rr = 0.28f, bg_gr = 0.06f, bg_br = 0.06f;
 	if (mirror) {
 		std::swap(bg_rl, bg_rr);
 		std::swap(bg_gl, bg_gr);
@@ -370,11 +376,11 @@ void Game::renderHealthBar(Player* player, float x, float y, float width, float 
 	drawClippedBar(x, y, width, height, width,
 		bg_rl, bg_gl, bg_bl,
 		bg_rr, bg_gr, bg_br,
-		0.92f, mirror);
+		0.85f, mirror);
 
 	// Capa 3: Barra fantasma de daño retardado
 	if (ghost_ratio > hp_ratio) {
-		float gh_rl = 1.0f, gh_gl = 0.55f, gh_bl = 0.55f;
+		float gh_rl = 1.0f, gh_gl = 0.50f, gh_bl = 0.50f;
 		float gh_rr = 1.0f, gh_gr = 0.65f, gh_br = 0.65f;
 		if (mirror) {
 			std::swap(gh_rl, gh_rr);
@@ -387,13 +393,14 @@ void Game::renderHealthBar(Player* player, float x, float y, float width, float 
 			0.75f, mirror);
 	}
 
-	// Capa 4: Barra de vida principal
+	// Capa 4: Barra de vida principal (siempre visible sobre el fondo oscuro)
 	float r_l = 0.82f, g_l = 0.02f, b_l = 0.02f;
 	float r_r = 0.98f, g_r = 0.25f, b_r = 0.25f;
 
 	if (player->flash_timer > 0.0f) {
-		r_l = 1.0f; g_l = 0.65f; b_l = 0.65f;
-		r_r = 1.0f; g_r = 0.85f; b_r = 0.85f;
+		// Destello blanco/coral intenso que destaca tanto sobre el fondo oscuro como sobre el daño fantasma
+		r_l = 1.0f; g_l = 0.85f; b_l = 0.85f;
+		r_r = 1.0f; g_r = 1.0f;  b_r = 1.0f;
 	}
 
 	if (mirror) {

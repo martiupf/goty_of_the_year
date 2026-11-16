@@ -77,6 +77,18 @@ void Player::update(float delta_time)
 
         return; // Sale del update para no aplicar gravedad mientras dura el dash
     }
+
+    if (punch_time > 0.0f) {
+        punch_time -= delta_time;
+
+        if (punch_time <= 0.0f) {
+            punch_time = 0.0f;
+            punch_cooldown = PUNCH_RECOVERY;
+        }
+    }
+    else if (punch_cooldown > 0.0f) {
+        punch_cooldown -= delta_time;
+    }
     applyGravity(delta_time);
     Entity::update(delta_time);
 }
@@ -90,7 +102,9 @@ void Player::move(Vector3 direction, float delta_time) {
         direction.z /= length;
 
         // 1. Calculamos hacia qué ángulo debe mirar según el movimiento
-        target_yaw = -atan2f(direction.x, direction.z);
+        if (punch_time <= 0.0f) {
+            target_yaw = -atan2f(direction.x, direction.z);
+        }
     }
     else {
         direction.x = 0.0f;
@@ -136,14 +150,16 @@ void Player::move(Vector3 direction, float delta_time) {
         model.setTranslation(position);
 
     // 2. Interpolación suave del giro (estilo Fall Guys)
-    float diff = target_yaw - current_yaw;
-    while (diff > 3.14159265f)  diff -= 6.28318530f;
-    while (diff < -3.14159265f) diff += 6.28318530f;
-    
-    float turn_speed = 50.0f;
-    float t = turn_speed * delta_time;
-    if (t > 1.0f) t = 1.0f;
-    current_yaw += diff * t;
+    if (punch_time <= 0.0f) {
+        float diff = target_yaw - current_yaw;
+        while (diff > 3.14159265f)  diff -= 6.28318530f;
+        while (diff < -3.14159265f) diff += 6.28318530f;
+
+        float turn_speed = 50.0f;
+        float t = turn_speed * delta_time;
+        if (t > 1.0f) t = 1.0f;
+        current_yaw += diff * t;
+    }
 
     // 3. Reconstruimos la matriz final con su posición válida y su rotación
     Vector3 final_pos = model.getTranslation();
@@ -246,6 +262,34 @@ void Player::render(Camera* camera)
     glEnd();
 
     glColor3f(1.0f, 1.0f, 1.0f); // Restablecer color base
+
+    if (punch_time > 0.0f) {
+        PunchOBB obb = getPunchOBB();
+        Vector3 rx = obb.right * obb.half_extents.x;
+        Vector3 ry = Vector3(0.0f, obb.half_extents.y, 0.0f);
+        Vector3 rz = obb.forward * obb.half_extents.z;
+
+        Vector3 p_corners[8] = {
+            obb.center - rx - ry - rz,
+            obb.center + rx - ry - rz,
+            obb.center + rx - ry + rz,
+            obb.center - rx - ry + rz,
+            obb.center - rx + ry - rz,
+            obb.center + rx + ry - rz,
+            obb.center + rx + ry + rz,
+            obb.center - rx + ry + rz
+        };
+
+        glColor3f(1.0f, 0.85f, 0.0f); // Amarillo
+        glBegin(GL_LINES);
+        for (int i = 0; i < 12; ++i) {
+            glVertex3fv(&p_corners[indices[i][0]].x);
+            glVertex3fv(&p_corners[indices[i][1]].x);
+        }
+        glEnd();
+    }
+
+    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 bool Player::checkCollision(Entity* map_entity)
@@ -268,4 +312,78 @@ void Player::takeDamage(float amount)
 
     ghost_delay = 0.45f; // Espera 0.45s antes de bajar la barra secundaria
     flash_timer = 0.12f; // Destello y vibración al recibir el golpe
+}
+
+void Player::punch()
+{
+    if (punch_time > 0.0f || punch_cooldown > 0.0f || dash_time > 0.0f)
+        return;
+
+    punch_time = PUNCH_DURATION;
+    current_yaw = target_yaw;
+    PunchOBB punch_obb = getPunchOBB();
+    for (Entity* map_entity : World::getInstance()->root->children) {
+        if (map_entity == this) continue;
+
+        if (testOBBvsAABB(punch_obb, map_entity->getAABB())) {
+            Player* target_player = dynamic_cast<Player*>(map_entity);
+            if (target_player) {
+                target_player->takeDamage(PUNCH_DAMAGE);
+            }
+        }
+    }
+}
+
+PunchOBB Player::getPunchOBB()
+{
+    PunchOBB obb;
+    obb.forward = Vector3(-sinf(current_yaw), 0.0f, cosf(current_yaw));
+    obb.right = Vector3(cosf(current_yaw), 0.0f, sinf(current_yaw));
+
+    obb.half_extents = Vector3(0.4f, 0.4f, 0.6f);
+
+    Vector3 pos = model.getTranslation();
+    obb.center = pos + obb.forward * 0.9f + Vector3(0.0f, 1.1f, 0.0f);
+
+    return obb;
+}
+
+bool Player::testOBBvsAABB(const PunchOBB& obb, const AABB& aabb)
+{
+    float obb_min_y = obb.center.y - obb.half_extents.y;
+    float obb_max_y = obb.center.y + obb.half_extents.y;
+    if (obb_max_y < aabb.min.y || obb_min_y > aabb.max.y)
+        return false;
+
+    float aabb_cx = (aabb.min.x + aabb.max.x) * 0.5f;
+    float aabb_cz = (aabb.min.z + aabb.max.z) * 0.5f;
+    float aabb_hx = (aabb.max.x - aabb.min.x) * 0.5f;
+    float aabb_hz = (aabb.max.z - aabb.min.z) * 0.5f;
+
+    float dx = obb.center.x - aabb_cx;
+    float dz = obb.center.z - aabb_cz;
+
+    float axes[4][2] = {
+        { 1.0f, 0.0f },
+        { 0.0f, 1.0f },
+        { obb.right.x, obb.right.z },
+        { obb.forward.x, obb.forward.z }
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        float ax = axes[i][0];
+        float az = axes[i][1];
+
+        float dist = fabsf(dx * ax + dz * az);
+
+        float r_aabb = aabb_hx * fabsf(ax) + aabb_hz * fabsf(az);
+
+        float r_obb = obb.half_extents.x * fabsf(obb.right.x * ax + obb.right.z * az)
+            + obb.half_extents.z * fabsf(obb.forward.x * ax + obb.forward.z * az);
+
+        if (dist > r_aabb + r_obb)
+            return false;
+    }
+
+    return true;
 }
