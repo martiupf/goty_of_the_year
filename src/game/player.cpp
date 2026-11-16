@@ -154,7 +154,9 @@ void Player::move(Vector3 direction, float delta_time) {
 void Player::jump(float delta_time) {
 
     if (is_grounded) {
-        vertical_velocity += 10;
+        vertical_velocity = 10.0f;
+        is_grounded = false;
+        dash_time = 0.0f;
     }
 
 }
@@ -166,6 +168,7 @@ void Player::dash() {
     dash_cooldown = 0.8f;
     dash_dir = Vector3(-sinf(current_yaw), 0.0f, cosf(current_yaw));
     vertical_velocity = 0.0f;
+    is_grounded = false;
 }
 
 void Player::applyGravity(float delta_time)
