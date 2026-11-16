@@ -32,6 +32,7 @@ public:
 	const float PUNCH_DURATION = 0.4f;
 	const float PUNCH_RECOVERY = 0.5f;
 	const float PUNCH_DAMAGE = 10.0f;
+	const float DEADZONE_Y = -20.0f;
 
 	void takeDamage(float amount);
 

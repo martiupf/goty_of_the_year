@@ -29,6 +29,9 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 
 void Player::update(float delta_time)
 {
+    if (current_hp > 0.0f && model.getTranslation().y <= DEADZONE_Y) {
+        takeDamage(current_hp);
+    }
     if (flash_timer > 0.0f)
         flash_timer -= delta_time;
 
