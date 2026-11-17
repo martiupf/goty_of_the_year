@@ -109,6 +109,21 @@ bool SceneParser::parse(const char* filename, Entity* root)
             new_entity->collider_type =
                 ColliderType::AABB_BOX;
 
+            // 1. Sacar la escala de la matriz del objeto (ej. 40, 0.5, 40)
+            const Matrix44& m = render_data.models[0];
+            Vector3 scale(
+                Vector3(m.m[0], m.m[1], m.m[2]).length(),
+                Vector3(m.m[4], m.m[5], m.m[6]).length(),
+                Vector3(m.m[8], m.m[9], m.m[10]).length()
+            );
+
+            // 2. Aplicar el tamaño real de la malla escalado al AABB
+            Vector3 b_min = mesh->box.center - mesh->box.halfsize;
+            Vector3 b_max = mesh->box.center + mesh->box.halfsize;
+
+            new_entity->local_aabb.min = Vector3(b_min.x * scale.x, b_min.y * scale.y, b_min.z * scale.z);
+            new_entity->local_aabb.max = Vector3(b_max.x * scale.x, b_max.y * scale.y, b_max.z * scale.z);
+
             std::cout << "[COLLIDER] "
                 << data.first
                 << " -> AABB"
