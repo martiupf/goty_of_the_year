@@ -171,7 +171,9 @@ void Game::update(double seconds_elapsed)
 		else {
 			player1->stopJump();
 		}
+
 		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) player1->dash();
+
 		if (Input::isMousePressed(SDL_BUTTON_LEFT)) player1->punch();
 		if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
 
@@ -230,6 +232,11 @@ void Game::onKeyDown(SDL_KeyboardEvent event)
 		}
 		else { camera_mode = FREE_CAMERA; }
 		break;
+	case SDLK_LSHIFT:
+		if (camera_mode == THIRD_PERSON) {
+			player1->dash();
+			break;
+		}
 	}
 }
 

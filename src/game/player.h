@@ -54,7 +54,8 @@ public:
 	float dash_cooldown = 0.0f; // Opcional, para no spamearlo en el aire
 	Vector3 dash_dir;
 
-	const float DASH_DURATION = 0.2f; // Segundos que dura el impulso
+	bool can_dash = true;
+	const float DASH_DURATION = 0.1f; // Segundos que dura el impulso
 	const float DASH_METERS = 5.0f;   // Distancia total que recorre
 
 	Player(Vector3 start_position, Mesh* mesh);
