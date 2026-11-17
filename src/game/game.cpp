@@ -28,6 +28,18 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
+	Player* player1 = nullptr;
+	Player* player2 = nullptr;
+
+	Camera* camera1 = nullptr;
+	Camera* camera2 = nullptr;
+
+	GameState game_state = TITLE;
+	 
+	initBattle();
+}
+
+void Game::initBattle() {
 	float half_aspect = ((window_width - LINE_WIDTH) * 0.5f) / (float)window_height;
 
 	camera1 = new Camera();
@@ -140,7 +152,7 @@ void Game::update(double seconds_elapsed)
 	else if (camera_mode == THIRD_PERSON) {
 		if (Input::isMousePressed(SDL_BUTTON_LEFT) || mouse_locked)
 		{
-			float sensitivity = 0.05f;
+			float sensitivity = 0.1f;
 			cam1_yaw -= Input::mouse_delta.x * 0.01f * sensitivity;
 			cam1_pitch -= Input::mouse_delta.y * 0.01f * sensitivity;
 

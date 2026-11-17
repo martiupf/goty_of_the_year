@@ -9,7 +9,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     
     model.setTranslation(start_position);
     
-    velocity = 5.0f;
+    velocity = 7.5f;
     rotation = 0.0f;
 
     vertical_velocity = 0.0f;

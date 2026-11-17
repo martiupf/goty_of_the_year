@@ -23,6 +23,13 @@ enum CameraMode {
 	THIRD_PERSON
 };
 
+enum GameState {
+	TITLE,
+	MAP_SELECT,
+	BATTLE,
+	VICTORY_SCREEN
+};
+
 class Game
 {
 public:
@@ -61,6 +68,9 @@ public:
 	void renderScene(Camera* camera);
 	void renderHUD();
 	void update( double dt );
+
+	//game_state flow
+	void initBattle();
 
 	bool loadMap(const char* scene_filepath);
 
