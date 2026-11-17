@@ -15,6 +15,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     vertical_velocity = 0.0f;
     gravity = 28.0f;
     is_grounded = false;
+    jump_pressed = false;
 
     is_collidable = true;
     collider_type = ColliderType::AABB_BOX;
@@ -176,8 +177,8 @@ void Player::move(Vector3 direction, float delta_time) {
 
 void Player::jump(float delta_time) {
 
-    if (is_grounded) {
-        vertical_velocity = 11.0f;
+    if (is_grounded && !jump_pressed) {
+        vertical_velocity = 6.0f;
         is_grounded = false;
 
         is_jump_held = true;
