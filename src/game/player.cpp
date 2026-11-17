@@ -13,7 +13,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     rotation = 0.0f;
 
     vertical_velocity = 0.0f;
-    gravity = 16.0f;
+    gravity = 28.0f;
     is_grounded = false;
 
     is_collidable = true;
@@ -177,7 +177,7 @@ void Player::move(Vector3 direction, float delta_time) {
 void Player::jump(float delta_time) {
 
     if (is_grounded) {
-        vertical_velocity = 8.0f;
+        vertical_velocity = 11.0f;
         is_grounded = false;
 
         is_jump_held = true;

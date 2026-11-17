@@ -201,7 +201,12 @@ void Game::update(double seconds_elapsed)
 			if (fabs(axis_y) > deadzone) input2_z = -axis_y;
 			if (fabs(axis_x) > deadzone) input2_x = -axis_x;
 
-			if (Input::gamepads[0].button[A_BUTTON]) player2->jump(seconds_elapsed);
+			if (Input::gamepads[0].button[A_BUTTON]) {
+				player2->jump(seconds_elapsed);
+			}
+			else {
+				player2->stopJump();
+			};
 			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
 			if (Input::gamepads[0].button[X_BUTTON]) player1->punch();
 			if (Input::gamepads[0].button[Y_BUTTON]) player1->punch();
