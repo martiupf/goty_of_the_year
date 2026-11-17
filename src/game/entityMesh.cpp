@@ -80,34 +80,22 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
 void EntityMesh::render(Camera* camera) {
     if (!mesh) return;
 
-    BoundingBox box = transformBoundingBox(
-        getGlobalMatrix(),
-        mesh->box
-    );
+    float max_distance = 150.0f;
 
-    float distance = 50.0f;
-    Vector3 center = box.center;
+    if (!isInstanced) {
+        BoundingBox box = transformBoundingBox(getGlobalMatrix(), mesh->box);
+        Vector3 center = box.center;
+        float sphere_radius = box.halfsize.length();
 
-    // Discard objects far away from the camera
-    if (camera->eye.distance(center) > distance)
-        return;
+        if (camera->eye.distance(center) - sphere_radius > max_distance)
+            return;
 
+        if (camera->testSphereInFrustum(center, sphere_radius) == CLIP_OUTSIDE)
+            return;
 
-    float sphere_radius = box.halfsize.length();
-
-    // Discard objects whose bounding sphere 
-    // is not inside the camera frustum
-    if (camera->testSphereInFrustum(center,
-        sphere_radius) != CLIP_INSIDE)
-        return;
-
-
-    // Testing box
-
-    // Discard objects whose bounding box is completely outside the camera frustum
-    if (camera->testBoxInFrustum(center,
-        box.halfsize) == CLIP_OUTSIDE)
-        return;
+        if (camera->testBoxInFrustum(center, box.halfsize) == CLIP_OUTSIDE)
+            return;
+    }
 
 
     glDisable(GL_BLEND);
@@ -134,6 +122,20 @@ void EntityMesh::render(Camera* camera) {
 
         for (const Matrix44& instance_model : models) {
             Matrix44 global_matrix = parent ? instance_model * parent_matrix : instance_model;
+
+            BoundingBox inst_box = transformBoundingBox(global_matrix, mesh->box);
+            Vector3 center = inst_box.center;
+            float sphere_radius = inst_box.halfsize.length();
+
+            if (camera->eye.distance(center) - sphere_radius > max_distance)
+                continue;
+
+            if (camera->testSphereInFrustum(center, sphere_radius) == CLIP_OUTSIDE)
+                continue;
+
+            if (camera->testBoxInFrustum(center, inst_box.halfsize) == CLIP_OUTSIDE)
+                continue;
+
             shader->setUniform("u_model", global_matrix);
             mesh->render(GL_TRIANGLES);
         }
