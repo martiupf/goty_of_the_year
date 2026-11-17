@@ -52,6 +52,10 @@ public:
 	const float EXTRA_JUMP_FORCE = 45.0f;
 
 	float dash_time = 0.0f;
+	bool can_jump_after_dash = false;
+	bool jump_queued = false;
+	float post_dash_jump_timer = 0.0f;
+	float time_since_grounded = 0.0f;
 	float dash_cooldown = 0.0f; // Opcional, para no spamearlo en el aire
 	Vector3 dash_dir;
 

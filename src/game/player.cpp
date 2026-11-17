@@ -184,7 +184,9 @@ void Player::jump(float delta_time) {
         is_jump_held = true;
         jump_hold_time = 0.0f;
 
-        dash_time = 0.0f;
+        can_jump_after_dash = false;
+        jump_queued = false;
+        post_dash_jump_timer = 0.0f;
     }
 
 }
