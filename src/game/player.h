@@ -34,6 +34,11 @@ public:
 	const float PUNCH_DAMAGE = 10.0f;
 	const float DEADZONE_Y = -20.0f;
 
+	const float MAX_JUMP_HOLD = 0.22f;
+	const float JUMP_SPEED = 13.0f;
+	const float JUMP_RELEASE_SPEED = 4.0f;
+	const float MAX_FALL_SPEED = -24.0f;
+
 	void takeDamage(float amount);
 
 	float current_yaw = 0.0f;
@@ -43,12 +48,11 @@ public:
 
 	float vertical_velocity;
 	float gravity;
-	bool is_grounded;
-	bool is_jump_held;
-	float jump_hold_time;
-	bool jump_pressed;
+	bool is_grounded = false;
+	bool is_jump_held = false;
+	float jump_hold_time = 0.0f;
+	bool jump_pressed = false;
 
-	const float MAX_JUMP_HOLD = 0.3f;
 	const float EXTRA_JUMP_FORCE = 45.0f;
 
 	float dash_time = 0.0f;

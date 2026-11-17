@@ -13,7 +13,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     rotation = 0.0f;
 
     vertical_velocity = 0.0f;
-    gravity = 28.0f;
+    gravity = 48.0f;
     is_grounded = false;
     jump_pressed = false;
 
@@ -83,7 +83,33 @@ void Player::update(float delta_time)
         model.setTranslation(final_pos.x, final_pos.y, final_pos.z);
         model.rotate(current_yaw, Vector3(0.0f, 1.0f, 0.0f));
 
+        if (dash_time <= 0.0f) {
+            dash_time = 0.0f;
+
+            if (can_jump_after_dash) {
+                if (jump_queued) {
+                    vertical_velocity = is_jump_held ? JUMP_SPEED : JUMP_RELEASE_SPEED;
+                    is_grounded = false;
+                    jump_hold_time = 0.0f;
+                    can_jump_after_dash = false;
+                    jump_queued = false;
+                    post_dash_jump_timer = 0.0f;
+                }
+                else {
+                    post_dash_jump_timer = 0.15f;
+                }
+            }
+        }
+
         return; // Sale del update para no aplicar gravedad mientras dura el dash
+    }
+    
+    if (post_dash_jump_timer > 0.0f) {
+        post_dash_jump_timer -= delta_time;
+        if (post_dash_jump_timer <= 0.0f) {
+            post_dash_jump_timer = 0.0f;
+            can_jump_after_dash = false;
+        }
     }
 
     if (punch_time > 0.0f) {
@@ -98,6 +124,13 @@ void Player::update(float delta_time)
         punch_cooldown -= delta_time;
     }
     applyGravity(delta_time);
+    if (is_grounded) {
+        can_dash = true;
+        time_since_grounded = 0.0f;
+    }
+    else {
+        time_since_grounded += delta_time;
+    }
     Entity::update(delta_time);
 }
 
@@ -176,9 +209,16 @@ void Player::move(Vector3 direction, float delta_time) {
 }
 
 void Player::jump(float delta_time) {
+    if (dash_time > 0.0f) {
+        if (!jump_pressed && can_jump_after_dash) {
+            jump_queued = true;
+            is_jump_held = true;
+        }
+        return;
+    }
 
-    if (is_grounded && !jump_pressed) {
-        vertical_velocity = 6.0f;
+    if (!jump_pressed && (is_grounded || (can_jump_after_dash && post_dash_jump_timer > 0.0f))) {
+        vertical_velocity = JUMP_SPEED;
         is_grounded = false;
 
         is_jump_held = true;
@@ -188,10 +228,13 @@ void Player::jump(float delta_time) {
         jump_queued = false;
         post_dash_jump_timer = 0.0f;
     }
-
 }
 
 void Player::stopJump() {
+    // Corte seco en el aire si sueltas el botón antes de agotar MAX_JUMP_HOLD
+    if (is_jump_held && vertical_velocity > JUMP_RELEASE_SPEED) {
+        vertical_velocity = JUMP_RELEASE_SPEED;
+    }
     is_jump_held = false;
 }
 
@@ -199,33 +242,64 @@ void Player::dash() {
     if (!can_dash || dash_time > 0.0f || dash_cooldown > 0.0f)
         return;
 
-    can_dash = false;
+    // Es dash terrestre si estás en el suelo o si jump() acaba de entrar unas milésimas antes (A+B)
+    bool grounded_dash = (is_grounded || time_since_grounded <= 0.06f);
+
+    if (grounded_dash) {
+        // No consume can_dash: mantiene el dash aéreo disponible al saltar
+        can_jump_after_dash = true;
+
+        // Si A entró justo antes que B en este frame, deja ese salto en cola para el final del dash
+        if (!is_grounded && vertical_velocity > 0.0f) {
+            jump_queued = true;
+        }
+    }
+    else {
+        can_dash = false;
+        can_jump_after_dash = false;
+        jump_queued = false;
+        is_jump_held = false;
+        jump_hold_time = MAX_JUMP_HOLD;
+    }
+
     dash_time = DASH_DURATION;
     dash_cooldown = 0.5f;
     dash_dir = Vector3(-sinf(current_yaw), 0.0f, cosf(current_yaw));
     vertical_velocity = 0.0f;
     is_grounded = false;
+    time_since_grounded = 1.0f;
 }
 
 void Player::applyGravity(float delta_time)
 {
-    if (is_jump_held && vertical_velocity > 0.0f && jump_hold_time < MAX_JUMP_HOLD) {
-        vertical_velocity += EXTRA_JUMP_FORCE * delta_time;
+    // Fase 1: Subida constante mientras mantienes pulsado el salto
+    if (is_jump_held && jump_hold_time < MAX_JUMP_HOLD) {
+        vertical_velocity = JUMP_SPEED;
         jump_hold_time += delta_time;
+
+        if (jump_hold_time >= MAX_JUMP_HOLD) {
+            is_jump_held = false; // Termina la subida constante y empieza a actuar la gravedad
+        }
+    }
+    // Fase 2 y 3: Gravedad fuerte y límite de velocidad terminal al caer
+    else {
+        vertical_velocity -= gravity * delta_time;
+        if (vertical_velocity < MAX_FALL_SPEED) {
+            vertical_velocity = MAX_FALL_SPEED;
+        }
     }
 
-    vertical_velocity -= gravity * delta_time;
     float movement_y = vertical_velocity * delta_time;
 
     Vector3 position = model.getTranslation();
     model.setTranslation(position + Vector3(0.0f, movement_y, 0.0f));
     bool collision_y = false;
 
-    for (Entity* map_entity : World::getInstance()->root->children){
+    for (Entity* map_entity : World::getInstance()->root->children) {
         if (map_entity == this || !map_entity->is_collidable)
             continue;
 
-        if (checkCollision(map_entity)){
+        if (checkCollision(map_entity)) {
             collision_y = true;
             break;
         }
@@ -234,14 +308,20 @@ void Player::applyGravity(float delta_time)
     if (collision_y) {
         model.setTranslation(position);
 
-        if (movement_y < 0.0f)
+        if (movement_y < 0.0f) {
             is_grounded = true;
+        }
+        else if (movement_y > 0.0f) {
+            // Si chocas contra un techo subiendo, corta el impulso para no quedarte pegado
+            is_jump_held = false;
+        }
 
         vertical_velocity = 0.0f;
     }
-    else{
+    else {
         is_grounded = false;
     }
+
     Vector3 final_pos = model.getTranslation();
     model.setTranslation(final_pos.x, final_pos.y, final_pos.z);
     model.rotate(current_yaw, Vector3(0.0f, 1.0f, 0.0f));
