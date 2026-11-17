@@ -13,7 +13,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     rotation = 0.0f;
 
     vertical_velocity = 0.0f;
-    gravity = 10.0f;
+    gravity = 16.0f;
     is_grounded = false;
 
     is_collidable = true;
@@ -173,11 +173,19 @@ void Player::move(Vector3 direction, float delta_time) {
 void Player::jump(float delta_time) {
 
     if (is_grounded) {
-        vertical_velocity = 10.0f;
+        vertical_velocity = 8.0f;
         is_grounded = false;
+
+        is_jump_held = true;
+        jump_hold_time = 0.0f;
+
         dash_time = 0.0f;
     }
 
+}
+
+void Player::stopJump() {
+    is_jump_held = false;
 }
 
 void Player::dash() {
@@ -192,8 +200,13 @@ void Player::dash() {
 
 void Player::applyGravity(float delta_time)
 {
-    vertical_velocity -= gravity * (float)delta_time;
-    float movement_y = vertical_velocity * (float)delta_time;
+    if (is_jump_held && vertical_velocity > 0.0f && jump_hold_time < MAX_JUMP_HOLD) {
+        vertical_velocity += EXTRA_JUMP_FORCE * delta_time;
+        jump_hold_time += delta_time;
+    }
+
+    vertical_velocity -= gravity * delta_time;
+    float movement_y = vertical_velocity * delta_time;
 
     Vector3 position = model.getTranslation();
     model.setTranslation(position + Vector3(0.0f, movement_y, 0.0f));

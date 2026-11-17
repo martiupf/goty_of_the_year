@@ -165,7 +165,12 @@ void Game::update(double seconds_elapsed)
 
 		player1->move(direction1, seconds_elapsed);
 
-		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) player1->jump(seconds_elapsed);
+		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) {
+			player1->jump(seconds_elapsed);
+		}
+		else {
+			player1->stopJump();
+		}
 		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) player1->dash();
 		if (Input::isMousePressed(SDL_BUTTON_LEFT)) player1->punch();
 		if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
