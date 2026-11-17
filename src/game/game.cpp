@@ -167,9 +167,11 @@ void Game::update(double seconds_elapsed)
 
 		if (Input::isKeyPressed(SDL_SCANCODE_SPACE)) {
 			player1->jump(seconds_elapsed);
+			player1->jump_pressed = true;
 		}
 		else {
 			player1->stopJump();
+			player1->jump_pressed = false;
 		}
 
 		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) player1->dash();
@@ -204,9 +206,11 @@ void Game::update(double seconds_elapsed)
 
 			if (Input::gamepads[0].button[A_BUTTON]) {
 				player2->jump(seconds_elapsed);
+				player2->jump_pressed = true;
 			}
 			else {
 				player2->stopJump();
+				player2->jump_pressed = false;
 			};
 			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
 			if (Input::gamepads[0].button[X_BUTTON]) player1->punch();

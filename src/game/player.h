@@ -46,9 +46,10 @@ public:
 	bool is_grounded;
 	bool is_jump_held;
 	float jump_hold_time;
+	bool jump_pressed;
 
-	const float MAX_JUMP_HOLD = 0.25f;
-	const float EXTRA_JUMP_FORCE = 28.0f;
+	const float MAX_JUMP_HOLD = 0.3f;
+	const float EXTRA_JUMP_FORCE = 45.0f;
 
 	float dash_time = 0.0f;
 	bool can_jump_after_dash = false;
