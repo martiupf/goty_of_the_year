@@ -44,6 +44,10 @@ void Player::update(float delta_time)
             ghost_hp = current_hp;
     }
 
+    if (is_grounded && dash_time <= 0.0f) {
+        can_dash = true;
+    }
+
     if (dash_cooldown > 0.0f)
         dash_cooldown -= delta_time;
 
@@ -181,10 +185,12 @@ void Player::jump(float delta_time) {
 }
 
 void Player::dash() {
-    if (dash_time > 0.0f || dash_cooldown > 0.0f) return;
+    if (!can_dash || dash_time > 0.0f || dash_cooldown > 0.0f)
+        return;
 
+    can_dash = false;
     dash_time = DASH_DURATION;
-    dash_cooldown = 0.8f;
+    dash_cooldown = 0.5f;
     dash_dir = Vector3(-sinf(current_yaw), 0.0f, cosf(current_yaw));
     vertical_velocity = 0.0f;
     is_grounded = false;
