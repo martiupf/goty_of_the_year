@@ -203,6 +203,9 @@ void Game::update(double seconds_elapsed)
 			if (fabs(axis_y) > deadzone) input2_z = -axis_y;
 			if (fabs(axis_x) > deadzone) input2_x = -axis_x;
 
+<<<<<<< HEAD
+			if (Input::gamepads[0].button[A_BUTTON]) player2->jump(seconds_elapsed);
+=======
 			if (Input::gamepads[0].button[A_BUTTON]) {
 				player2->jump(seconds_elapsed);
 				player2->jump_pressed = true;
@@ -212,6 +215,7 @@ void Game::update(double seconds_elapsed)
 				player2->jump_pressed = false;
 			};
 			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
+>>>>>>> c242365359d500d5402c711151c69d965548fdd9
 			if (Input::gamepads[0].button[X_BUTTON]) player1->punch();
 			if (Input::gamepads[0].button[Y_BUTTON]) player1->punch();
 			if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
@@ -268,7 +272,16 @@ void Game::onMouseWheel(SDL_MouseWheelEvent event)
 	mouse_speed *= event.y > 0 ? 1.1f : 0.9f;
 }
 
-void Game::onGamepadButtonDown(SDL_JoyButtonEvent event) {}
+void Game::onGamepadButtonDown(SDL_JoyButtonEvent event) {
+	switch (event.button)
+	{
+	case B_BUTTON:
+		if (camera_mode == THIRD_PERSON) {
+			player2->dash();
+			break;
+		}
+	}
+}
 void Game::onGamepadButtonUp(SDL_JoyButtonEvent event) {}
 
 void Game::onResize(int width, int height)
