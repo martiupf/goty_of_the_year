@@ -225,8 +225,8 @@ void Game::update(double seconds_elapsed)
 				player2->jump_pressed = false;
 			};
 			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
-			if (Input::gamepads[0].button[X_BUTTON]) player1->punch();
-			if (Input::gamepads[0].button[Y_BUTTON]) player1->punch();
+			if (Input::gamepads[0].button[X_BUTTON]) player2->punch();
+			if (Input::gamepads[0].button[Y_BUTTON]) player2->punch();
 			if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
 		}
 
