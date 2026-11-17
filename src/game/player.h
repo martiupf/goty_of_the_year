@@ -44,6 +44,11 @@ public:
 	float vertical_velocity;
 	float gravity;
 	bool is_grounded;
+	bool is_jump_held;
+	float jump_hold_time;
+
+	const float MAX_JUMP_HOLD = 0.25f;
+	const float EXTRA_JUMP_FORCE = 28.0f;
 
 	float dash_time = 0.0f;
 	float dash_cooldown = 0.0f; // Opcional, para no spamearlo en el aire
@@ -57,6 +62,7 @@ public:
 	void update(float delta_time) override;
 	void move(Vector3 direction, float delta_time);
 	void jump(float delta_time);
+	void stopJump();
 	void dash();
 	void applyGravity(float delta_time);
 	void render(Camera* camera);
