@@ -186,11 +186,6 @@ void Game::update(double seconds_elapsed)
 			player1->jump_pressed = false;
 		}
 
-		if (Input::isKeyPressed(SDL_SCANCODE_LSHIFT)) player1->dash();
-
-		if (Input::isMousePressed(SDL_BUTTON_LEFT)) player1->punch();
-		if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
-
 		// PLAYER 2 (movimiento relativo a cam2_yaw)
 		float input2_z = 0.0f;
 		float input2_x = 0.0f;
@@ -224,10 +219,6 @@ void Game::update(double seconds_elapsed)
 				player2->stopJump();
 				player2->jump_pressed = false;
 			};
-			if (Input::gamepads[0].button[B_BUTTON]) player2->dash();
-			if (Input::gamepads[0].button[X_BUTTON]) player2->punch();
-			if (Input::gamepads[0].button[Y_BUTTON]) player2->punch();
-			if (Input::isMousePressed(SDL_BUTTON_RIGHT)) player1->punch();
 		}
 
 		Vector3 forward2(-sinf(cam2_yaw), 0.0f, cosf(cam2_yaw));
@@ -266,6 +257,17 @@ void Game::onKeyUp(SDL_KeyboardEvent event) {}
 
 void Game::onMouseButtonDown(SDL_MouseButtonEvent event)
 {
+	switch (event.button) {
+	case SDL_BUTTON_MIDDLE:
+		mouse_locked = !mouse_locked;
+		SDL_ShowCursor(!mouse_locked);
+		SDL_SetRelativeMouseMode((SDL_bool)(mouse_locked));
+		break;
+	case SDL_BUTTON_LEFT:
+		player1->punch(); break;
+	case SDL_BUTTON_RIGHT:
+		player1->punch(); break;
+	}
 	if (event.button == SDL_BUTTON_MIDDLE)
 	{
 		mouse_locked = !mouse_locked;
@@ -287,6 +289,16 @@ void Game::onGamepadButtonDown(SDL_JoyButtonEvent event) {
 	case B_BUTTON:
 		if (camera_mode == THIRD_PERSON) {
 			player2->dash();
+			break;
+		}
+	case X_BUTTON:
+		if (camera_mode == THIRD_PERSON) {
+			player2->punch();
+			break;
+		}
+	case Y_BUTTON:
+		if (camera_mode == THIRD_PERSON) {
+			player2->punch();
 			break;
 		}
 	}

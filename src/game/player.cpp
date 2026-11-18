@@ -30,6 +30,11 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 
 void Player::update(float delta_time)
 {
+    if (knockback_stun_timer > 0.0f) {
+        knockback_stun_timer -= delta_time;
+        if (knockback_stun_timer < 0.0f)
+            knockback_stun_timer = 0.0f;
+    }
     if (current_hp > 0.0f && model.getTranslation().y <= DEADZONE_Y) {
         takeDamage(current_hp);
     }
@@ -103,7 +108,7 @@ void Player::update(float delta_time)
 
         return; // Sale del update para no aplicar gravedad mientras dura el dash
     }
-    
+
     if (post_dash_jump_timer > 0.0f) {
         post_dash_jump_timer -= delta_time;
         if (post_dash_jump_timer <= 0.0f) {
@@ -113,6 +118,26 @@ void Player::update(float delta_time)
     }
 
     if (punch_time > 0.0f) {
+        PunchOBB punch_obb = getPunchOBB();
+
+        for (Entity* map_entity : World::getInstance()->root->children) {
+            if (map_entity == this)
+                continue;
+
+            // Evitar golpear dos veces al mismo objetivo con el mismo puñetazo
+            if (std::find(punch_hit_entities.begin(), punch_hit_entities.end(), map_entity) != punch_hit_entities.end())
+                continue;
+
+            if (testOBBvsAABB(punch_obb, map_entity->getAABB())) {
+                Player* target_player = dynamic_cast<Player*>(map_entity);
+                if (target_player) {
+                    target_player->takeDamage(PUNCH_DAMAGE);
+                    target_player->applyKnockback(punch_obb.forward);
+                    punch_hit_entities.push_back(map_entity);
+                }
+            }
+        }
+
         punch_time -= delta_time;
 
         if (punch_time <= 0.0f) {
@@ -123,6 +148,43 @@ void Player::update(float delta_time)
     else if (punch_cooldown > 0.0f) {
         punch_cooldown -= delta_time;
     }
+
+    // Aplicar desplazamiento horizontal por knockback
+    if (knockback_vel.length() > 0.05f) {
+        Vector3 kb_move = knockback_vel * delta_time;
+
+        // Colisión eje X
+        Vector3 pos = model.getTranslation();
+        model.setTranslation(pos + Vector3(kb_move.x, 0.0f, 0.0f));
+        for (Entity* map_entity : World::getInstance()->root->children) {
+            if (map_entity != this && map_entity->is_collidable && checkCollision(map_entity)) {
+                model.setTranslation(pos);
+                knockback_vel.x = 0.0f;
+                break;
+            }
+        }
+
+        // Colisión eje Z
+        pos = model.getTranslation();
+        model.setTranslation(pos + Vector3(0.0f, 0.0f, kb_move.z));
+        for (Entity* map_entity : World::getInstance()->root->children) {
+            if (map_entity != this && map_entity->is_collidable && checkCollision(map_entity)) {
+                model.setTranslation(pos);
+                knockback_vel.z = 0.0f;
+                break;
+            }
+        }
+
+        // Fricción para que el empuje decaiga suavemente
+        float friction = 7.0f;
+        float damping = friction * delta_time;
+        if (damping > 1.0f) damping = 1.0f;
+        knockback_vel = knockback_vel * (1.0f - damping);
+    }
+    else {
+        knockback_vel = Vector3(0.0f, 0.0f, 0.0f);
+    }
+
     applyGravity(delta_time);
     if (is_grounded) {
         can_dash = true;
@@ -136,6 +198,7 @@ void Player::update(float delta_time)
 
 void Player::move(Vector3 direction, float delta_time) {
     if (dash_time > 0.0f) return;
+    if (knockback_stun_timer > 0.0f) return;
     float length = sqrt(direction.x * direction.x + direction.z * direction.z);
 
     if (length > 0.0f) {
@@ -421,22 +484,11 @@ void Player::takeDamage(float amount)
 
 void Player::punch()
 {
-    if (punch_time > 0.0f || punch_cooldown > 0.0f || dash_time > 0.0f)
+    if (punch_time > 0.0f || punch_cooldown > 0.0f)
         return;
 
     punch_time = PUNCH_DURATION;
-    current_yaw = target_yaw;
-    PunchOBB punch_obb = getPunchOBB();
-    for (Entity* map_entity : World::getInstance()->root->children) {
-        if (map_entity == this) continue;
-
-        if (testOBBvsAABB(punch_obb, map_entity->getAABB())) {
-            Player* target_player = dynamic_cast<Player*>(map_entity);
-            if (target_player) {
-                target_player->takeDamage(PUNCH_DAMAGE);
-            }
-        }
-    }
+    punch_hit_entities.clear();
 }
 
 PunchOBB Player::getPunchOBB()
@@ -445,10 +497,12 @@ PunchOBB Player::getPunchOBB()
     obb.forward = Vector3(-sinf(current_yaw), 0.0f, cosf(current_yaw));
     obb.right = Vector3(cosf(current_yaw), 0.0f, sinf(current_yaw));
 
-    obb.half_extents = Vector3(0.4f, 0.4f, 0.6f);
+    // Un poco más ancha (X), alta (Y) y larga (Z)
+    obb.half_extents = Vector3(0.6f, 0.6f, 1.2f);
 
     Vector3 pos = model.getTranslation();
-    obb.center = pos + obb.forward * 0.9f + Vector3(0.0f, 1.1f, 0.0f);
+    // Centrada delante del personaje a la altura del torso (sin desfase en Z global)
+    obb.center = pos + obb.forward * 1.1f + Vector3(0.0f, 1.1f, 0.0f);
 
     return obb;
 }
@@ -491,4 +545,36 @@ bool Player::testOBBvsAABB(const PunchOBB& obb, const AABB& aabb)
     }
 
     return true;
+}
+
+void Player::applyKnockback(Vector3 direction)
+{
+    // 0.0f cuando tienes 100% de vida -> 1.0f cuando tienes 0% de vida
+    float missing_hp_ratio = 1.0f - (current_hp / max_hp);
+    if (missing_hp_ratio < 0.0f) missing_hp_ratio = 0.0f;
+    if (missing_hp_ratio > 1.0f) missing_hp_ratio = 1.0f;
+
+    // Ajusta estos 4 valores a tu gusto para calibrar el lanzamiento
+    float min_horizontal = 15.0f;
+    float max_horizontal = 50.0f;
+    float min_vertical = 10.0f;
+    float max_vertical = 25.0f;
+
+    float horizontal_force = min_horizontal + (max_horizontal - min_horizontal) * missing_hp_ratio;
+    float vertical_force = min_vertical + (max_vertical - min_vertical) * missing_hp_ratio;
+
+    direction.y = 0.0f;
+    if (direction.length() > 0.001f) {
+        direction.normalize();
+    }
+
+    knockback_vel = direction * horizontal_force;
+    vertical_velocity = vertical_force;
+    is_grounded = false;
+
+    // Corta cualquier salto mantenido o dash en curso para que no pisen el impulso
+    is_jump_held = false;
+    jump_hold_time = MAX_JUMP_HOLD;
+    dash_time = 0.0f;
+    knockback_stun_timer = 0.2f + 0.25f * missing_hp_ratio;
 }

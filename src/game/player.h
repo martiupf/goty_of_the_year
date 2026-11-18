@@ -52,8 +52,15 @@ public:
 	bool is_jump_held = false;
 	float jump_hold_time = 0.0f;
 	bool jump_pressed = false;
+	float knockback_stun_timer = 0.0f;
 
 	const float EXTRA_JUMP_FORCE = 45.0f;
+
+	Vector3 knockback_vel = Vector3(0.0f, 0.0f, 0.0f);
+
+	void punch();
+	void applyKnockback(Vector3 direction);
+	std::vector<Entity*> punch_hit_entities;
 
 	float dash_time = 0.0f;
 	bool can_jump_after_dash = false;
@@ -78,7 +85,6 @@ public:
 	//Returns AABB translated to the world
 	bool checkCollision(Entity* map_entity);
 
-	void punch();
 	PunchOBB getPunchOBB();
 	bool testOBBvsAABB(const PunchOBB& obb, const AABB& aabb);
 };
