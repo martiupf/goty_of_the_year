@@ -2,6 +2,7 @@
 
 #include "framework/entities/entity.h"
 #include "graphics/mesh.h"
+#include "world.h"
 
 #define sRenderData MaterialRenderData
 #include "graphics/material.h"
@@ -16,6 +17,7 @@ public:
     Mesh* mesh = nullptr;
     Material material;
     bool isInstanced = false;
+    bool receive_lighting = true;
     std::vector<Matrix44> models;
 
     void render(Camera* camera) override;

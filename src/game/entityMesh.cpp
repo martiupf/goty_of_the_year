@@ -5,7 +5,7 @@
 EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
     : mesh(mesh), material(material) {
     if (!this->material.shader) {
-        this->material.shader = Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
+        this->material.shader = Shader::Get("data/shaders/basic.vs", "data/shaders/light.fs");
     }
     if (!this->material.diffuse) {
         this->material.diffuse = Texture::Get("data/textures/missing.tga");
@@ -102,11 +102,17 @@ void EntityMesh::render(Camera* camera) {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    Shader* shader = material.shader;
+    Shader* shader = receive_lighting ? material.shader : Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
     if (!shader) return;
 
     shader->enable();
     shader->setUniform("u_viewprojection", camera->viewprojection_matrix);
+    shader->setUniform("u_camera_pos", camera->eye);
+    if (World::instance) {
+        shader->setUniform("u_light_dir", World::instance->light_dir);
+        shader->setUniform("u_light_color", World::instance->light_color);
+        shader->setUniform("u_ambient_light", World::instance->ambient_light);
+    }
 
     if (material.diffuse) {
         shader->setTexture("u_texture", material.diffuse, 0);
