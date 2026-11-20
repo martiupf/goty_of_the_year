@@ -22,26 +22,25 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 	frame = 0;
 	time = 0.0f;
 	elapsed_time = 0.0f;
-	mouse_locked = true;
-	SDL_SetRelativeMouseMode(SDL_TRUE);
+
+	mouse_locked = false;
+	SDL_ShowCursor(SDL_ENABLE);
+	SDL_SetRelativeMouseMode(SDL_FALSE);
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	
-	initMenu();
-	initBattle();
+	initTitle();
 }
 
-void Game::initMenu() {
-	start_button.button_x = 300;
-	start_button.button_y = 250;
-	start_button.button_width = 200;
-	start_button.button_height = 80;
-
-	start_button.texture_id = loadTexture("data/textures/play_button.bmp");
+void Game::initTitle() {
+	start_button = new Button(300, 200, 200, 80, Texture::Get("data/textures/play_button.png") );
 }
 
 void Game::initBattle() {
+
+	std::cout << "INIT BATTLE CALLED" << std::endl;
+
 	float half_aspect = ((window_width - LINE_WIDTH) * 0.5f) / (float)window_height;
 
 	camera1 = new Camera();
@@ -54,17 +53,22 @@ void Game::initBattle() {
 
 	SDL_ShowCursor(!mouse_locked);
 
-	camera_mode = FREE_CAMERA;
+	camera_mode = THIRD_PERSON;
 
 	loadMap("data/testing_map.scene");
 	World* world = World::getInstance();
 	Mesh* player_mesh = Mesh::Get("data/cuidado/Untitled.obj"); // se podrian poner dos meshes diferentes
 
-	player1 = new Player(Vector3(-3, 2, 0), player_mesh);
-	player2 = new Player(Vector3(3, 0.0, 0), player_mesh);
+	player1 = new Player(Vector3(-3, 0, 0), player_mesh);
+	player2 = new Player(Vector3(3, 0, 0), player_mesh);
 
 	world->root->addChild(player1);
 	world->root->addChild(player2);
+}
+
+void Game::initVictoryScreen() {
+	replay_button = new Button(300, 200, 200, 80, Texture::Get("data/textures/play_button.png"));
+	return_title_button = new Button(500, 200, 200, 80, Texture::Get("data/textures/play_button.png"));
 }
 
 bool Game::loadMap(const char* scene_filepath)
@@ -150,16 +154,42 @@ void Game::render(void)
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (game_state == TITLE) {
+	if (game_state == TITLE)
+	{
 		glViewport(0, 0, window_width, window_height);
+
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
 
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 		glLoadIdentity();
-
 		glOrtho(0, window_width, window_height, 0, -1, 1);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_DEPTH_TEST);
+		glUseProgram(0);
+
+		start_button->render();
+
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+
+		glPopMatrix();
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+
+		glMatrixMode(GL_MODELVIEW);
+
+		glEnable(GL_DEPTH_TEST);
 	}
-	else if (game_state == BATTLE) {
+	else if (game_state == BATTLE)
+	{
 		int viewport_width = (window_width - LINE_WIDTH) / 2;
 
 		glViewport(0, 0, viewport_width, window_height);
@@ -171,13 +201,57 @@ void Game::render(void)
 		glViewport(0, 0, window_width, window_height);
 		renderHUD();
 	}
+	else if (game_state == VICTORY_SCREEN) {
+		glViewport(0, 0, window_width, window_height);
+
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING);
+
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+		glOrtho(0, window_width, window_height, 0, -1, 1);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_DEPTH_TEST);
+		glUseProgram(0);
+
+		replay_button->render();
+		return_title_button->render();
+
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+
+		glPopMatrix();
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+
+		glMatrixMode(GL_MODELVIEW);
+
+		glEnable(GL_DEPTH_TEST);
+	}
+
 	SDL_GL_SwapWindow(this->window);
 }
 
 void Game::update(double seconds_elapsed)
 {
+
+	if (game_state != BATTLE)
+		return;
+
+	seconds_elapsed = std::min(seconds_elapsed, 0.05);
+
 	float speed = (float)seconds_elapsed * mouse_speed;
+	
 	World::getInstance()->update((float)seconds_elapsed);
+
+	checkVictory();
 
 	angle += (float)seconds_elapsed * 10.0f;
 
@@ -314,6 +388,35 @@ void Game::onKeyUp(SDL_KeyboardEvent event) {}
 
 void Game::onMouseButtonDown(SDL_MouseButtonEvent event)
 {
+	if (game_state == TITLE) {
+		if (event.button == SDL_BUTTON_LEFT) {
+			if (start_button->is_clicked(event)){
+				game_state = BATTLE;
+				initBattle();
+				setMouseLocked(true);
+			}
+		}
+
+		return;
+	}
+	else if (game_state == VICTORY_SCREEN) {
+		if (event.button == SDL_BUTTON_LEFT) {
+			if (replay_button->is_clicked(event)) {
+				winner = NO_WINNER;
+				game_state = BATTLE;
+				initBattle();
+				setMouseLocked(true);
+			}
+
+			if (return_title_button->is_clicked(event)) {
+				winner = NO_WINNER;
+				game_state = TITLE;
+				initTitle();
+				setMouseLocked(false);
+			}
+		}
+	}
+
 	switch (event.button) {
 	case SDL_BUTTON_MIDDLE:
 		mouse_locked = !mouse_locked;
@@ -372,6 +475,23 @@ void Game::setMouseLocked(bool must_lock)
 	SDL_ShowCursor(!must_lock);
 	SDL_SetRelativeMouseMode((SDL_bool)must_lock);
 	mouse_locked = must_lock;
+}
+
+void Game::checkVictory() {
+	if (player1->current_hp <= 0) {
+		winner = PLAYER_2;
+	}
+	else if (player2->current_hp <= 0) {
+		winner = PLAYER_1;
+	}
+	else {
+		return;
+	}
+
+	game_state = VICTORY_SCREEN;
+
+	setMouseLocked(false);
+	initVictoryScreen();
 }
 
 void Game::updateThirdPersonCamera(Camera* camera, Player* player) {
@@ -559,34 +679,4 @@ void Game::renderHUD()
 
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
-}
-
-GLuint loadTexture(const char* filename)
-{
-	SDL_Surface* surface = SDL_LoadBMP(filename);
-
-	if (!surface)
-	{
-		std::cout << "Error loading BMP: " << SDL_GetError() << std::endl;
-		return 0;
-	}
-
-	GLuint texture_id;
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	GLenum format = (surface->format->BytesPerPixel == 4)
-		? GL_RGBA
-		: GL_RGB;
-
-	glTexImage2D(GL_TEXTURE_2D, 0, format, surface->w, surface->h, 0, format, GL_UNSIGNED_BYTE, surface->pixels);
-
-	SDL_FreeSurface(surface);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return texture_id;
 }

@@ -14,17 +14,6 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
         Vector3 original_min = mesh->aabb_min;
         Vector3 original_max = mesh->aabb_max;
 
-        std::cout << "AABB ORIGINAL DEL MESH:" << std::endl;
-        std::cout << "MIN: "
-            << original_min.x << ", "
-            << original_min.y << ", "
-            << original_min.z << std::endl;
-
-        std::cout << "MAX: "
-            << original_max.x << ", "
-            << original_max.y << ", "
-            << original_max.z << std::endl;
-
         Vector3 corners[8] = {
             Vector3(original_min.x, original_min.y, original_min.z),
             Vector3(original_max.x, original_min.y, original_min.z),
@@ -62,17 +51,6 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
             local_aabb.max.y = std::max(local_aabb.max.y, p.y);
             local_aabb.max.z = std::max(local_aabb.max.z, p.z);
         }
-
-        std::cout << "AABB CONVERTIDA:" << std::endl;
-        std::cout << "MIN: "
-            << local_aabb.min.x << ", "
-            << local_aabb.min.y << ", "
-            << local_aabb.min.z << std::endl;
-
-        std::cout << "MAX: "
-            << local_aabb.max.x << ", "
-            << local_aabb.max.y << ", "
-            << local_aabb.max.z << std::endl;
     }
 }
 

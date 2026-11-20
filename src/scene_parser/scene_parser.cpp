@@ -74,6 +74,8 @@ bool SceneParser::parse(const char* filename, Entity* root)
 
         EntityMesh* new_entity = nullptr;
 
+
+
         Mesh* mesh = Mesh::Get(mesh_name.c_str());
 
         if (!mesh) {

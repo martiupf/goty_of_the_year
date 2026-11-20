@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "framework/entities/entity.h"
 #include "game/entityMesh.h"
 
