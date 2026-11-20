@@ -76,14 +76,61 @@ bool Game::loadMap(const char* scene_filepath)
 		return false;
 	}
 
+	glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	if (!skybox_tex) {
+		skybox_tex = new Texture();
+	}
+
+	std::vector<std::string> faces = {
+		"data/skybox/right.png",  // +X
+		"data/skybox/left.png",   // -X
+		"data/skybox/top.png",    // +Y
+		"data/skybox/bottom.png", // -Y
+		"data/skybox/front.png",  // +Z
+		"data/skybox/back.png"    // -Z
+	};
+	skybox_tex->loadCubemap("skybox", faces);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex->texture_id);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	skybox_mesh = Mesh::Get("data/scene/aabb_Cubo.001/aabb_Cubo.001.obj");
+	skybox_shader = Shader::Get("data/shaders/skybox.vs", "data/shaders/skybox.fs");
+
 	std::cout << "[OK] Map successfully loaded: " << scene_filepath << std::endl;
 	return true;
+
 }
 
 void Game::renderScene(Camera* camera)
 {
 	camera->enable();
 	//This renders all meshes of the world
+	if (skybox_tex && skybox_mesh && skybox_shader) {
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		glDisable(GL_CULL_FACE);
+
+		Matrix44 sky_model;
+		sky_model.setTranslation(camera->eye.x, camera->eye.y, camera->eye.z);
+		sky_model.scale(10.0f, 10.0f, 10.0f);
+
+		skybox_shader->enable();
+		skybox_shader->setUniform("u_viewprojection", camera->viewprojection_matrix);
+		skybox_shader->setUniform("u_model", sky_model);
+		skybox_shader->setTexture("u_texture", skybox_tex, 0);
+
+		skybox_mesh->render(GL_TRIANGLES);
+
+		skybox_shader->disable();
+
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+	}
 	World::getInstance()->render(camera);
 	drawGrid();
 }
@@ -262,12 +309,7 @@ void Game::onMouseButtonDown(SDL_MouseButtonEvent event)
 	case SDL_BUTTON_RIGHT:
 		player1->punch(); break;
 	}
-	if (event.button == SDL_BUTTON_MIDDLE)
-	{
-		mouse_locked = !mouse_locked;
-		SDL_ShowCursor(!mouse_locked);
-		SDL_SetRelativeMouseMode((SDL_bool)(mouse_locked));
-	}
+	
 }
 
 void Game::onMouseButtonUp(SDL_MouseButtonEvent event) {}
@@ -493,13 +535,6 @@ void Game::renderHUD()
 
 	renderHealthBar(player1, margin, margin, bar_w, bar_h, true);               // Espejada: degradado y vaciado hacia el centro
 	renderHealthBar(player2, viewport_w + margin, margin, bar_w, bar_h, false); // Normal: degradado y vaciado hacia el centro
-
-	// (Si cambias a split-screen HORIZONTAL Arriba/Abajo, usa estas dos líneas con false en ambas):
-	/*
-	float bar_w = window_width - (margin * 2.0f);
-	renderHealthBar(player1, margin, margin, bar_w, bar_h, false);
-	renderHealthBar(player2, margin, (window_height * 0.5f) + margin, bar_w, bar_h, false);
-	*/
 
 	glPopMatrix();
 	glMatrixMode(GL_PROJECTION);
