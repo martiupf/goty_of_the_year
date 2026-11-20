@@ -27,8 +27,18 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	 
+	
+	initMenu();
 	initBattle();
+}
+
+void Game::initMenu() {
+	start_button.button_x = 300;
+	start_button.button_y = 250;
+	start_button.button_width = 200;
+	start_button.button_height = 80;
+
+	start_button.texture_id = loadTexture("data/textures/play_button.bmp");
 }
 
 void Game::initBattle() {
@@ -142,6 +152,12 @@ void Game::render(void)
 
 	if (game_state == TITLE) {
 		glViewport(0, 0, window_width, window_height);
+
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+
+		glOrtho(0, window_width, window_height, 0, -1, 1);
 	}
 	else if (game_state == BATTLE) {
 		int viewport_width = (window_width - LINE_WIDTH) / 2;
@@ -543,4 +559,34 @@ void Game::renderHUD()
 
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
+}
+
+GLuint loadTexture(const char* filename)
+{
+	SDL_Surface* surface = SDL_LoadBMP(filename);
+
+	if (!surface)
+	{
+		std::cout << "Error loading BMP: " << SDL_GetError() << std::endl;
+		return 0;
+	}
+
+	GLuint texture_id;
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	GLenum format = (surface->format->BytesPerPixel == 4)
+		? GL_RGBA
+		: GL_RGB;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, format, surface->w, surface->h, 0, format, GL_UNSIGNED_BYTE, surface->pixels);
+
+	SDL_FreeSurface(surface);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return texture_id;
 }

@@ -60,7 +60,6 @@ public:
 	float cam2_pitch = 0.5f;
 	CameraMode camera_mode;
 
-
 	//some vars
 	GameState game_state = BATTLE;
 
@@ -68,7 +67,10 @@ public:
 	Camera* camera2 = nullptr;
 	bool mouse_locked; //tells if the mouse is locked (not seen)
 
-	
+	// buttons
+	Button start_button;
+
+
 	Game( int window_width, int window_height, SDL_Window* window );
 
 	//main functions
@@ -115,4 +117,49 @@ public:
 	float button_y;
 	float button_width;
 	float button_height;
+
+	GLuint texture_id;
+
+	Button() {
+		button_x = 0;
+		button_y = 0;
+		button_width = 0;
+		button_height = 0;
+		texture_id = 0;
+	}
+
+	void render()
+	{
+		if (texture_id == 0)
+			return;
+
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glBindTexture(GL_TEXTURE_2D, texture_id);
+
+		glColor4f(1, 1, 1, 1);
+
+		glBegin(GL_QUADS);
+
+		glTexCoord2f(0, 0);
+		glVertex2f(button_x, button_y);
+
+		glTexCoord2f(1, 0);
+		glVertex2f(button_x + button_width, button_y);
+
+		glTexCoord2f(1, 1);
+		glVertex2f(button_x + button_width, button_y + button_height);
+
+		glTexCoord2f(0, 1);
+		glVertex2f(button_x, button_y + button_height);
+
+		glEnd();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_BLEND);
+	}
 };
