@@ -39,8 +39,6 @@ void Game::initTitle() {
 
 void Game::initBattle() {
 
-	std::cout << "INIT BATTLE CALLED" << std::endl;
-
 	float half_aspect = ((window_width - LINE_WIDTH) * 0.5f) / (float)window_height;
 
 	camera1 = new Camera();
