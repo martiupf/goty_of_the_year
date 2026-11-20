@@ -35,6 +35,10 @@ class Game
 public:
 	static Game* instance;
 
+	Texture* skybox_tex = nullptr;
+	Mesh* skybox_mesh = nullptr;
+	Shader* skybox_shader = nullptr;
+
 	//window
 	SDL_Window* window;
 	int window_width;
