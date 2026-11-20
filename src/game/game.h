@@ -48,19 +48,23 @@ public:
 	bool must_exit;
 
 	//n
-	Player* player1;
+	Player* player1 = nullptr;
 	float cam1_yaw = 0.0f;
 	float cam1_pitch = 0.5f;
-	Player* player2;
+	Player* player2 = nullptr;
 	float cam2_yaw = 0.0f;
 	float cam2_pitch = 0.5f;
 	CameraMode camera_mode;
 
+
 	//some vars
-	Camera* camera1;
-	Camera* camera2;
+	GameState game_state = BATTLE;
+
+	Camera* camera1 = nullptr;
+	Camera* camera2 = nullptr;
 	bool mouse_locked; //tells if the mouse is locked (not seen)
 
+	
 	Game( int window_width, int window_height, SDL_Window* window );
 
 	//main functions
@@ -97,4 +101,14 @@ public:
 
 	//n
 	void updateThirdPersonCamera(Camera* camera, Player* player);
+
+};
+
+class Button 
+{
+public:
+	float button_x;
+	float button_y;
+	float button_width;
+	float button_height;
 };

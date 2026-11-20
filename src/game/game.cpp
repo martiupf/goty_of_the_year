@@ -27,14 +27,6 @@ Game::Game(int window_width, int window_height, SDL_Window* window)
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-
-	Player* player1 = nullptr;
-	Player* player2 = nullptr;
-
-	Camera* camera1 = nullptr;
-	Camera* camera2 = nullptr;
-
-	GameState game_state = TITLE;
 	 
 	initBattle();
 }
@@ -98,22 +90,24 @@ void Game::renderScene(Camera* camera)
 
 void Game::render(void)
 {
-	int viewport_width = (window_width - LINE_WIDTH) / 2;
-
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glViewport(0, 0, viewport_width, window_height);
-	renderScene(camera1);
+	if (game_state == TITLE) {
+		glViewport(0, 0, window_width, window_height);
+	}
+	else if (game_state == BATTLE) {
+		int viewport_width = (window_width - LINE_WIDTH) / 2;
 
-	glViewport(viewport_width + LINE_WIDTH, 0, viewport_width, window_height);
-	renderScene(camera2);
+		glViewport(0, 0, viewport_width, window_height);
+		renderScene(camera1);
 
-	glViewport(0, 0, window_width, window_height);
-	drawText(2, 2, getGPUStats(), Vector3(1, 1, 1), 2);
+		glViewport(viewport_width + LINE_WIDTH, 0, viewport_width, window_height);
+		renderScene(camera2);
 
-	renderHUD();
-
+		glViewport(0, 0, window_width, window_height);
+		renderHUD();
+	}
 	SDL_GL_SwapWindow(this->window);
 }
 
