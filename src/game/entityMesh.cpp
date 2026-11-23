@@ -105,6 +105,19 @@ void EntityMesh::render(Camera* camera) {
         else {
             shader->setUniform("u_use_shadows", 0);
         }
+        shader->setUniform("u_player1_pos", World::instance->player1_pos);
+        shader->setUniform("u_player1_active", (receive_blob_shadows && World::instance->has_player1) ? 1 : 0);
+        if (World::instance->player1_shadow_map) {
+            shader->setTexture("u_player1_depth_map", World::instance->player1_shadow_map, 2);
+            shader->setUniform("u_player1_vp", World::instance->player1_vp);
+        }
+
+        shader->setUniform("u_player2_pos", World::instance->player2_pos);
+        shader->setUniform("u_player2_active", (receive_blob_shadows && World::instance->has_player2) ? 1 : 0);
+        if (World::instance->player2_shadow_map) {
+            shader->setTexture("u_player2_depth_map", World::instance->player2_shadow_map, 3);
+            shader->setUniform("u_player2_vp", World::instance->player2_vp);
+        }
     }
 
     if (material.diffuse) {

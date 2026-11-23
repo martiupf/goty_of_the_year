@@ -72,6 +72,8 @@ public:
 	Camera* camera1 = nullptr;
 	Camera* camera2 = nullptr;
 	FBO* shadow_fbo = nullptr;
+	FBO* player1_shadow_fbo = nullptr;
+	FBO* player2_shadow_fbo = nullptr;
 	Camera* light_camera = nullptr;
 	Vector3 shadow_box_min = Vector3(-35.0f, -10.0f, -35.0f);
 	Vector3 shadow_box_max = Vector3(35.0f, 35.0f, 35.0f);

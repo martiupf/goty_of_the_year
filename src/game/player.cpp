@@ -26,6 +26,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     visual = new EntityMesh(mesh, material);
     visual->is_collidable = false; // Importante: la malla gráfica no debe colisionar
     visual->cast_shadows = false;
+    visual->receive_blob_shadows = false;
     addChild(visual);
 }
 

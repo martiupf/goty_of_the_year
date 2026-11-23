@@ -53,6 +53,14 @@ void Game::initBattle() {
 		shadow_fbo = new FBO();
 		shadow_fbo->setDepthOnly(2048, 2048);
 	}
+	if (!player1_shadow_fbo) {
+		player1_shadow_fbo = new FBO();
+		player1_shadow_fbo->setDepthOnly(256, 256);
+	}
+	if (!player2_shadow_fbo) {
+		player2_shadow_fbo = new FBO();
+		player2_shadow_fbo->setDepthOnly(256, 256);
+	}
 	if (!light_camera) {
 		light_camera = new Camera();
 	}
@@ -224,6 +232,32 @@ void Game::renderShadowMap(void)
 	world->render(light_camera);
 	shadow_fbo->unbind();
 
+	if (player1 && player1_shadow_fbo) {
+		Vector3 p1 = world->player1_pos;
+		light_camera->lookAt(p1 + Vector3(0.0f, 0.25f, 0.0f), p1 + Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, 0.0f, -1.0f));
+		light_camera->setOrthographic(-1.0f, 1.0f, -1.0f, 1.0f, 0.05f, 15.0f);
+		world->player1_vp = light_camera->viewprojection_matrix;
+		world->player1_shadow_map = player1_shadow_fbo->depth_texture;
+
+		player1_shadow_fbo->bind();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		world->render(light_camera);
+		player1_shadow_fbo->unbind();
+	}
+
+	if (player2 && player2_shadow_fbo) {
+		Vector3 p2 = world->player2_pos;
+		light_camera->lookAt(p2 + Vector3(0.0f, 0.25f, 0.0f), p2 + Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, 0.0f, -1.0f));
+		light_camera->setOrthographic(-1.0f, 1.0f, -1.0f, 1.0f, 0.05f, 15.0f);
+		world->player2_vp = light_camera->viewprojection_matrix;
+		world->player2_shadow_map = player2_shadow_fbo->depth_texture;
+
+		player2_shadow_fbo->bind();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		world->render(light_camera);
+		player2_shadow_fbo->unbind();
+	}
+
 	world->is_shadow_pass = false;
 }
 
@@ -297,6 +331,12 @@ void Game::render(void)
 	}
 	else if (game_state == BATTLE)
 	{
+		World* world = World::getInstance();
+		world->has_player1 = (player1 != nullptr);
+		if (player1) world->player1_pos = player1->model.getTranslation();
+		world->has_player2 = (player2 != nullptr);
+		if (player2) world->player2_pos = player2->model.getTranslation();
+
 		renderShadowMap();
 
 		int viewport_width = (window_width - LINE_WIDTH) / 2;

@@ -19,6 +19,7 @@ public:
     bool isInstanced = false;
     bool receive_lighting = true;
     bool cast_shadows = true;
+    bool receive_blob_shadows = true;
     std::vector<Matrix44> models;
 
     void render(Camera* camera) override;

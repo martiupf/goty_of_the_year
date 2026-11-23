@@ -15,6 +15,16 @@ public:
     Matrix44 light_viewprojection;
     bool is_shadow_pass = false;
 
+    Vector3 player1_pos;
+    Vector3 player2_pos;
+    bool has_player1 = false;
+    bool has_player2 = false;
+
+    Texture* player1_shadow_map = nullptr;
+    Matrix44 player1_vp;
+    Texture* player2_shadow_map = nullptr;
+    Matrix44 player2_vp;
+
     World();
     ~World();
 
