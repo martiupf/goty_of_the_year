@@ -17,6 +17,7 @@
 #include "player.h"
 #include "button.h"
 #include "framework/entities/entity.h"
+#include "weapon.h"
 
 enum CameraMode {
 	FREE_CAMERA,

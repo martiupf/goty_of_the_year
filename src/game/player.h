@@ -2,6 +2,7 @@
 
 #include "framework/entities/entity.h"
 #include "game/entityMesh.h"
+#include "weapon.h"
 
 struct PunchOBB {
 	Vector3 center;
@@ -86,4 +87,10 @@ public:
 
 	PunchOBB getPunchOBB();
 	bool testOBBvsAABB(const PunchOBB& obb, const AABB& aabb);
+
+	Weapon* equipped_weapon = nullptr;
+
+	bool pickWeapon(Weapon* weapon);
+	void dropWeapon();
+	void attack();
 };

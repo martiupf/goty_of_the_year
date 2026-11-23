@@ -78,6 +78,13 @@ void Game::initBattle() {
 
 	world->root->addChild(player1);
 	world->root->addChild(player2);
+
+	Mesh* sword_mesh = Mesh::Get("data/cuidado/Untitled.obj");
+
+	Weapon* sword = new Weapon(Weapon::MELEE, sword_mesh);
+	sword->setOnGround(Vector3(0.0f, 0.0f, 0.0f));
+
+	world->root->addChild(sword);
 }
 
 void Game::initVictoryScreen() {

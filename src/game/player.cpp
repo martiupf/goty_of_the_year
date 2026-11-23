@@ -3,6 +3,7 @@
 #include "world.h"
 #include "game.h"
 #include <cmath>
+#include <algorithm>
 
 Player::Player(Vector3 start_position, Mesh* mesh)
 {
@@ -121,24 +122,41 @@ void Player::update(float delta_time)
 
     if (punch_time > 0.0f) {
         PunchOBB punch_obb = getPunchOBB();
+        Weapon* weapon_to_pickup = nullptr;
 
         for (Entity* map_entity : World::getInstance()->root->children) {
             if (map_entity == this)
                 continue;
 
-            // Evitar golpear dos veces al mismo objetivo con el mismo puñetazo
-            if (std::find(punch_hit_entities.begin(), punch_hit_entities.end(), map_entity) != punch_hit_entities.end())
+            if (std::find(punch_hit_entities.begin(),
+                punch_hit_entities.end(),
+                map_entity) != punch_hit_entities.end())
                 continue;
 
-            if (testOBBvsAABB(punch_obb, map_entity->getAABB())) {
-                Player* target_player = dynamic_cast<Player*>(map_entity);
-                if (target_player) {
-                    target_player->takeDamage(PUNCH_DAMAGE);
-                    target_player->applyKnockback(punch_obb.forward);
-                    punch_hit_entities.push_back(map_entity);
-                }
+            if (!testOBBvsAABB(punch_obb, map_entity->getAABB()))
+                continue;
+
+            // si se toca un arma
+            Weapon* weapon = dynamic_cast<Weapon*>(map_entity);
+
+            if (weapon) {
+                weapon_to_pickup = weapon;
+                break;
+            }
+
+            // si se toca a un jugador
+            Player* target_player = dynamic_cast<Player*>(map_entity);
+
+            if (target_player) {
+                target_player->takeDamage(PUNCH_DAMAGE);
+                target_player->applyKnockback(punch_obb.forward);
+                punch_hit_entities.push_back(map_entity);
             }
         }
+
+        // coger arma
+        if (weapon_to_pickup)
+            pickWeapon(weapon_to_pickup);
 
         punch_time -= delta_time;
 
@@ -147,6 +165,7 @@ void Player::update(float delta_time)
             punch_cooldown = PUNCH_RECOVERY;
         }
     }
+
     else if (punch_cooldown > 0.0f) {
         punch_cooldown -= delta_time;
     }
@@ -577,4 +596,15 @@ void Player::applyKnockback(Vector3 direction)
     jump_hold_time = MAX_JUMP_HOLD;
     dash_time = 0.0f;
     knockback_stun_timer = 0.2f + 0.25f * missing_hp_ratio;
+}
+
+bool Player::pickWeapon(Weapon* weapon)
+{
+    return true;
+    
+}
+
+void Player::dropWeapon()
+{
+   
 }
