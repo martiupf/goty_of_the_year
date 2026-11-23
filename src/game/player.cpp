@@ -25,6 +25,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
     Material material;
     visual = new EntityMesh(mesh, material);
     visual->is_collidable = false; // Importante: la malla gráfica no debe colisionar
+    visual->cast_shadows = false;
     addChild(visual);
 }
 
@@ -549,16 +550,14 @@ bool Player::testOBBvsAABB(const PunchOBB& obb, const AABB& aabb)
 
 void Player::applyKnockback(Vector3 direction)
 {
-    // 0.0f cuando tienes 100% de vida -> 1.0f cuando tienes 0% de vida
     float missing_hp_ratio = 1.0f - (current_hp / max_hp);
     if (missing_hp_ratio < 0.0f) missing_hp_ratio = 0.0f;
     if (missing_hp_ratio > 1.0f) missing_hp_ratio = 1.0f;
 
-    // Ajusta estos 4 valores a tu gusto para calibrar el lanzamiento
-    float min_horizontal = 15.0f;
-    float max_horizontal = 50.0f;
-    float min_vertical = 10.0f;
-    float max_vertical = 25.0f;
+    float min_horizontal = 25.0f;
+    float max_horizontal = 100.0f;
+    float min_vertical = 4.0f;
+    float max_vertical = 10.0f;
 
     float horizontal_force = min_horizontal + (max_horizontal - min_horizontal) * missing_hp_ratio;
     float vertical_force = min_vertical + (max_vertical - min_vertical) * missing_hp_ratio;

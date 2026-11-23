@@ -1,5 +1,6 @@
 #pragma once
 #include "framework/entities/entity.h"
+#include "../graphics/texture.h"
 
 class World {
 public:
@@ -9,6 +10,10 @@ public:
     Vector3 light_dir = Vector3(0.4f, -1.0f, 0.3f);
     Vector3 light_color = Vector3(1.0f, 0.95f, 0.85f);
     Vector3 ambient_light = Vector3(0.3f, 0.3f, 0.35f);
+
+    Texture* shadow_map = nullptr;
+    Matrix44 light_viewprojection;
+    bool is_shadow_pass = false;
 
     World();
     ~World();

@@ -49,6 +49,14 @@ void Game::initBattle() {
 	camera2->lookAt(Vector3(0.f, 15.f, 25.f), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
 	camera2->setPerspective(70.f, half_aspect, 0.1f, 10000.f);
 
+	if (!shadow_fbo) {
+		shadow_fbo = new FBO();
+		shadow_fbo->setDepthOnly(2048, 2048);
+	}
+	if (!light_camera) {
+		light_camera = new Camera();
+	}
+
 	SDL_ShowCursor(!mouse_locked);
 
 	camera_mode = THIRD_PERSON;
@@ -113,9 +121,110 @@ bool Game::loadMap(const char* scene_filepath)
 	skybox_mesh = Mesh::Get("data/scene/aabb_Cubo.001/aabb_Cubo.001.obj");
 	skybox_shader = Shader::Get("data/shaders/skybox.vs", "data/shaders/skybox.fs");
 
+	// Calcular la caja envolvente (AABB) de todas las entidades del mapa que proyectan sombra
+	shadow_box_min = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+	shadow_box_max = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+	bool has_casters = false;
+
+	for (Entity* child : world->root->children) {
+		EntityMesh* em = dynamic_cast<EntityMesh*>(child);
+		if (!em || !em->mesh || !em->cast_shadows) continue;
+
+		if (em->isInstanced && !em->models.empty()) {
+			for (const Matrix44& m : em->models) {
+				BoundingBox b = transformBoundingBox(m, em->mesh->box);
+				Vector3 b_min = b.center - b.halfsize;
+				Vector3 b_max = b.center + b.halfsize;
+				shadow_box_min.x = std::min(shadow_box_min.x, b_min.x);
+				shadow_box_min.y = std::min(shadow_box_min.y, b_min.y);
+				shadow_box_min.z = std::min(shadow_box_min.z, b_min.z);
+				shadow_box_max.x = std::max(shadow_box_max.x, b_max.x);
+				shadow_box_max.y = std::max(shadow_box_max.y, b_max.y);
+				shadow_box_max.z = std::max(shadow_box_max.z, b_max.z);
+				has_casters = true;
+			}
+		}
+		else {
+			BoundingBox b = transformBoundingBox(em->getGlobalMatrix(), em->mesh->box);
+			Vector3 b_min = b.center - b.halfsize;
+			Vector3 b_max = b.center + b.halfsize;
+			shadow_box_min.x = std::min(shadow_box_min.x, b_min.x);
+			shadow_box_min.y = std::min(shadow_box_min.y, b_min.y);
+			shadow_box_min.z = std::min(shadow_box_min.z, b_min.z);
+			shadow_box_max.x = std::max(shadow_box_max.x, b_max.x);
+			shadow_box_max.y = std::max(shadow_box_max.y, b_max.y);
+			shadow_box_max.z = std::max(shadow_box_max.z, b_max.z);
+			has_casters = true;
+		}
+	}
+
+	if (!has_casters) {
+		shadow_box_min = Vector3(-35.0f, -10.0f, -35.0f);
+		shadow_box_max = Vector3(35.0f, 35.0f, 35.0f);
+	}
+
 	std::cout << "[OK] Map successfully loaded: " << scene_filepath << std::endl;
 	return true;
 
+}
+
+void Game::renderShadowMap(void)
+{
+	if (!shadow_fbo || !light_camera) return;
+
+	World* world = World::getInstance();
+	Vector3 dir = world->light_dir;
+	dir.normalize();
+
+	// Ajusta el rango (-35..35) según el tamaño de tu mapa
+	Vector3 target = (shadow_box_min + shadow_box_max) * 0.5f;
+	float radius = (shadow_box_max - shadow_box_min).length() * 0.5f;
+	Vector3 eye = target - dir * (radius + 10.0f);
+	Vector3 up = (fabsf(dir.y) > 0.99f) ? Vector3(0.0f, 0.0f, 1.0f) : Vector3(0.0f, 1.0f, 0.0f);
+
+	light_camera->lookAt(eye, target, up);
+
+	// Transformar las 8 esquinas del mapa al espacio vista de la luz
+	Vector3 corners[8] = {
+		Vector3(shadow_box_min.x, shadow_box_min.y, shadow_box_min.z),
+		Vector3(shadow_box_max.x, shadow_box_min.y, shadow_box_min.z),
+		Vector3(shadow_box_min.x, shadow_box_max.y, shadow_box_min.z),
+		Vector3(shadow_box_max.x, shadow_box_max.y, shadow_box_min.z),
+		Vector3(shadow_box_min.x, shadow_box_min.y, shadow_box_max.z),
+		Vector3(shadow_box_max.x, shadow_box_min.y, shadow_box_max.z),
+		Vector3(shadow_box_min.x, shadow_box_max.y, shadow_box_max.z),
+		Vector3(shadow_box_max.x, shadow_box_max.y, shadow_box_max.z)
+	};
+
+	float min_x = FLT_MAX, max_x = -FLT_MAX;
+	float min_y = FLT_MAX, max_y = -FLT_MAX;
+	float min_z = FLT_MAX, max_z = -FLT_MAX;
+
+	for (int i = 0; i < 8; ++i) {
+		Vector3 p = light_camera->view_matrix * corners[i];
+		min_x = std::min(min_x, p.x);
+		max_x = std::max(max_x, p.x);
+		min_y = std::min(min_y, p.y);
+		max_y = std::max(max_y, p.y);
+		min_z = std::min(min_z, p.z);
+		max_z = std::max(max_z, p.z);
+	}
+
+	float near_plane = std::max(0.1f, -max_z - 5.0f);
+	float far_plane = -min_z + 5.0f;
+
+	light_camera->setOrthographic(min_x, max_x, min_y, max_y, near_plane, far_plane);
+
+	world->light_viewprojection = light_camera->viewprojection_matrix;
+	world->shadow_map = shadow_fbo->depth_texture;
+	world->is_shadow_pass = true;
+
+	shadow_fbo->bind();
+	glClear(GL_DEPTH_BUFFER_BIT);
+	world->render(light_camera);
+	shadow_fbo->unbind();
+
+	world->is_shadow_pass = false;
 }
 
 void Game::renderScene(Camera* camera)
@@ -188,6 +297,8 @@ void Game::render(void)
 	}
 	else if (game_state == BATTLE)
 	{
+		renderShadowMap();
+
 		int viewport_width = (window_width - LINE_WIDTH) / 2;
 
 		glViewport(0, 0, viewport_width, window_height);

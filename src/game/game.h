@@ -71,6 +71,10 @@ public:
 
 	Camera* camera1 = nullptr;
 	Camera* camera2 = nullptr;
+	FBO* shadow_fbo = nullptr;
+	Camera* light_camera = nullptr;
+	Vector3 shadow_box_min = Vector3(-35.0f, -10.0f, -35.0f);
+	Vector3 shadow_box_max = Vector3(35.0f, 35.0f, 35.0f);
 	bool mouse_locked; //tells if the mouse is locked (not seen)
 
 	// buttons
@@ -82,6 +86,7 @@ public:
 
 	//main functions
 	void render( void );
+	void renderShadowMap(void);
 	void renderScene(Camera* camera);
 	void renderHUD();
 	void update( double dt );

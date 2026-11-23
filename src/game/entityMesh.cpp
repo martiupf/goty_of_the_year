@@ -58,6 +58,12 @@ EntityMesh::EntityMesh(Mesh* mesh, const Material& material)
 void EntityMesh::render(Camera* camera) {
     if (!mesh) return;
 
+    bool shadow_pass = (World::instance && World::instance->is_shadow_pass);
+    if (shadow_pass && !cast_shadows) {
+        Entity::render(camera);
+        return;
+    }
+
     float max_distance = 150.0f;
 
     if (!isInstanced) {
@@ -80,16 +86,25 @@ void EntityMesh::render(Camera* camera) {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    Shader* shader = receive_lighting ? material.shader : Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
+    Shader* shader = (receive_lighting && !shadow_pass) ? material.shader : Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
     if (!shader) return;
 
     shader->enable();
     shader->setUniform("u_viewprojection", camera->viewprojection_matrix);
     shader->setUniform("u_camera_pos", camera->eye);
-    if (World::instance) {
+    if (World::instance && !shadow_pass) {
         shader->setUniform("u_light_dir", World::instance->light_dir);
         shader->setUniform("u_light_color", World::instance->light_color);
         shader->setUniform("u_ambient_light", World::instance->ambient_light);
+
+        if (World::instance->shadow_map) {
+            shader->setTexture("u_shadow_map", World::instance->shadow_map, 1);
+            shader->setUniform("u_light_viewprojection", World::instance->light_viewprojection);
+            shader->setUniform("u_use_shadows", 1);
+        }
+        else {
+            shader->setUniform("u_use_shadows", 0);
+        }
     }
 
     if (material.diffuse) {
@@ -136,7 +151,7 @@ void EntityMesh::render(Camera* camera) {
     Entity::render(camera);
 
     // Dibujar AABB si la entidad tiene colision
-    if (is_collidable && collider_type == ColliderType::AABB_BOX)
+    if (!shadow_pass && is_collidable && collider_type == ColliderType::AABB_BOX)
     {
         AABB box = getAABB();
 
