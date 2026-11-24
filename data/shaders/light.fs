@@ -68,19 +68,9 @@ float computeShadow(vec3 world_pos, float NdotL)
 		return 0.0;
 
 	float bias = max(0.004 * (1.0 - NdotL), 0.0005);
-	float texel_size = 1.0 / 2048.0;
-	float shadow = 0.0;
+	float closest_depth = texture2D(u_shadow_map, proj_coords.xy).r;
 
-	for (int x = -1; x <= 1; ++x)
-	{
-		for (int y = -1; y <= 1; ++y)
-		{
-			float pcf_depth = texture2D(u_shadow_map, proj_coords.xy + vec2(x, y) * texel_size).r;
-			shadow += (proj_coords.z - bias > pcf_depth) ? 1.0 : 0.0;
-		}
-	}
-
-	return shadow / 9.0;
+	return (proj_coords.z - bias > closest_depth) ? 1.0 : 0.0;
 }
 
 void main()

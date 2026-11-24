@@ -51,7 +51,7 @@ void Game::initBattle() {
 
 	if (!shadow_fbo) {
 		shadow_fbo = new FBO();
-		shadow_fbo->setDepthOnly(2048, 2048);
+		shadow_fbo->setDepthOnly(4096, 4096);
 	}
 	if (!player1_shadow_fbo) {
 		player1_shadow_fbo = new FBO();
@@ -79,12 +79,12 @@ void Game::initBattle() {
 	world->root->addChild(player1);
 	world->root->addChild(player2);
 
-	Mesh* sword_mesh = Mesh::Get("data/cuidado/Untitled.obj");
+	Mesh* jumper_mesh = Mesh::Get("data/cuidado/Untitled.obj");
 
-	Weapon* sword = new Weapon(Weapon::MELEE, sword_mesh);
-	sword->setOnGround(Vector3(0.0f, 0.0f, 0.0f));
+	Weapon* double_jumper = new Weapon(Weapon::MOVEMENT, jumper_mesh);
+	double_jumper->setOnGround(Vector3(0.0f, 0.0f, 0.0f));
 
-	world->root->addChild(sword);
+	world->root->addChild(double_jumper);
 }
 
 void Game::initVictoryScreen() {
@@ -136,18 +136,41 @@ bool Game::loadMap(const char* scene_filepath)
 	skybox_mesh = Mesh::Get("data/scene/aabb_Cubo.001/aabb_Cubo.001.obj");
 	skybox_shader = Shader::Get("data/shaders/skybox.vs", "data/shaders/skybox.fs");
 
-	// Calcular la caja envolvente (AABB) de todas las entidades del mapa que proyectan sombra
+	std::cout << "[OK] Map successfully loaded: " << scene_filepath << std::endl;
+	return true;
+
+}
+
+void Game::renderShadowMap(void)
+{
+	if (!shadow_fbo || !light_camera) return;
+
+	World* world = World::getInstance();
+	Vector3 dir = world->light_dir;
+	dir.normalize();
+
 	shadow_box_min = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
 	shadow_box_max = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	bool has_casters = false;
 
-	for (Entity* child : world->root->children) {
-		EntityMesh* em = dynamic_cast<EntityMesh*>(child);
+	std::vector<Entity*> stack = world->root->children;
+	while (!stack.empty()) {
+		Entity* curr = stack.back();
+		stack.pop_back();
+		if (!curr) continue;
+
+		for (Entity* c : curr->children) {
+			stack.push_back(c);
+		}
+
+		EntityMesh* em = dynamic_cast<EntityMesh*>(curr);
 		if (!em || !em->mesh || !em->cast_shadows) continue;
 
 		if (em->isInstanced && !em->models.empty()) {
+			Matrix44 parent_mat = em->parent ? em->parent->getGlobalMatrix() : Matrix44();
 			for (const Matrix44& m : em->models) {
-				BoundingBox b = transformBoundingBox(m, em->mesh->box);
+				Matrix44 global_mat = em->parent ? m * parent_mat : m;
+				BoundingBox b = transformBoundingBox(global_mat, em->mesh->box);
 				Vector3 b_min = b.center - b.halfsize;
 				Vector3 b_max = b.center + b.halfsize;
 				shadow_box_min.x = std::min(shadow_box_min.x, b_min.x);
@@ -178,20 +201,6 @@ bool Game::loadMap(const char* scene_filepath)
 		shadow_box_max = Vector3(35.0f, 35.0f, 35.0f);
 	}
 
-	std::cout << "[OK] Map successfully loaded: " << scene_filepath << std::endl;
-	return true;
-
-}
-
-void Game::renderShadowMap(void)
-{
-	if (!shadow_fbo || !light_camera) return;
-
-	World* world = World::getInstance();
-	Vector3 dir = world->light_dir;
-	dir.normalize();
-
-	// Ajusta el rango (-35..35) según el tamaño de tu mapa
 	Vector3 target = (shadow_box_min + shadow_box_max) * 0.5f;
 	float radius = (shadow_box_max - shadow_box_min).length() * 0.5f;
 	Vector3 eye = target - dir * (radius + 10.0f);
@@ -580,9 +589,9 @@ void Game::onMouseButtonDown(SDL_MouseButtonEvent event)
 		SDL_SetRelativeMouseMode((SDL_bool)(mouse_locked));
 		break;
 	case SDL_BUTTON_LEFT:
-		player1->punch(); break;
+		player1->punch(0); break;
 	case SDL_BUTTON_RIGHT:
-		player1->punch(); break;
+		player1->punch(1); break;
 	}
 	
 }
@@ -604,12 +613,12 @@ void Game::onGamepadButtonDown(SDL_JoyButtonEvent event) {
 		}
 	case X_BUTTON:
 		if (camera_mode == THIRD_PERSON) {
-			player2->punch();
+			player2->punch(0);
 			break;
 		}
 	case Y_BUTTON:
 		if (camera_mode == THIRD_PERSON) {
-			player2->punch();
+			player2->punch(1);
 			break;
 		}
 	}

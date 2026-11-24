@@ -1,4 +1,5 @@
 #include "player.h"
+#include "weapon.h"
 #include "collider.h"
 #include "world.h"
 #include "game.h"
@@ -139,7 +140,7 @@ void Player::update(float delta_time)
             // si se toca un arma
             Weapon* weapon = dynamic_cast<Weapon*>(map_entity);
 
-            if (weapon) {
+            if (weapon && weapon->state == Weapon::ON_GROUND) {
                 weapon_to_pickup = weapon;
                 break;
             }
@@ -156,7 +157,7 @@ void Player::update(float delta_time)
 
         // coger arma
         if (weapon_to_pickup)
-            pickWeapon(weapon_to_pickup);
+            pickWeapon(weapon_to_pickup, punch_slot);
 
         punch_time -= delta_time;
 
@@ -418,6 +419,9 @@ void Player::render(Camera* camera)
     // 1. Render normal de la entidad (dibuja al personaje y sus hijos)
     Entity::render(camera);
 
+    if (World::instance && World::instance->is_shadow_pass)
+        return;
+
     // 2. Dibujar directamente la AABB
     AABB box = getAABB();
 
@@ -503,11 +507,18 @@ void Player::takeDamage(float amount)
     flash_timer = 0.12f; // Destello y vibración al recibir el golpe
 }
 
-void Player::punch()
+void Player::punch(int slot)
 {
+    if (slot < 0 || slot > 1)
+        return;
+
+    if (weapon_slots[slot] != nullptr)
+        return;
+
     if (punch_time > 0.0f || punch_cooldown > 0.0f)
         return;
 
+    punch_slot = slot;
     punch_time = PUNCH_DURATION;
     punch_hit_entities.clear();
 }
@@ -598,13 +609,33 @@ void Player::applyKnockback(Vector3 direction)
     knockback_stun_timer = 0.2f + 0.25f * missing_hp_ratio;
 }
 
-bool Player::pickWeapon(Weapon* weapon)
+bool Player::pickWeapon(Weapon* weapon, int slot)
 {
+    if (!weapon || slot < 0 || slot > 1)
+        return false;
+
+    if (weapon_slots[slot] != nullptr)
+        return false;
+
+    if (weapon->parent) {
+        weapon->parent->removeChild(weapon);
+    }
+
+    weapon_slots[slot] = weapon;
+    weapon->equip(this, slot);
     return true;
-    
 }
 
-void Player::dropWeapon()
+void Player::dropWeapon(int slot)
 {
-   
+    if (slot < 0 || slot > 1 || !weapon_slots[slot])
+        return;
+
+    Weapon* weapon = weapon_slots[slot];
+    weapon_slots[slot] = nullptr;
+
+    removeChild(weapon);
+
+    World::getInstance()->root->addChild(weapon);
+    weapon->setOnGround(model.getTranslation());
 }

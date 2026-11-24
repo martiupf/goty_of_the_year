@@ -8,7 +8,8 @@ public:
 
     enum WeaponType {
         MELEE,
-        RANGED
+        RANGED,
+        MOVEMENT
     };
 
     enum WeaponState {
@@ -24,6 +25,6 @@ public:
     Weapon(WeaponType type, Mesh* mesh);
 
     void setOnGround(Vector3 position);
-
-    AABB getAABB() override;
+    void equip(Entity* owner, int slot);
+    void render(Camera* camera) override;
 };

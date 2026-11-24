@@ -71,7 +71,7 @@ void EntityMesh::render(Camera* camera) {
         Vector3 center = box.center;
         float sphere_radius = box.halfsize.length();
 
-        if (camera->eye.distance(center) - sphere_radius > max_distance)
+        if (!shadow_pass && camera->eye.distance(center) - sphere_radius > max_distance)
             return;
 
         if (camera->testSphereInFrustum(center, sphere_radius) == CLIP_OUTSIDE)
@@ -139,7 +139,7 @@ void EntityMesh::render(Camera* camera) {
             Vector3 center = inst_box.center;
             float sphere_radius = inst_box.halfsize.length();
 
-            if (camera->eye.distance(center) - sphere_radius > max_distance)
+            if (!shadow_pass && camera->eye.distance(center) - sphere_radius > max_distance)
                 continue;
 
             if (camera->testSphereInFrustum(center, sphere_radius) == CLIP_OUTSIDE)

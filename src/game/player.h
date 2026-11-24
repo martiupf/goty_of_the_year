@@ -58,7 +58,7 @@ public:
 
 	Vector3 knockback_vel = Vector3(0.0f, 0.0f, 0.0f);
 
-	void punch();
+	void punch(int slot = 0);
 	void applyKnockback(Vector3 direction);
 	std::vector<Entity*> punch_hit_entities;
 
@@ -88,9 +88,11 @@ public:
 	PunchOBB getPunchOBB();
 	bool testOBBvsAABB(const PunchOBB& obb, const AABB& aabb);
 
-	Weapon* equipped_weapon = nullptr;
+	Weapon* weapon_slots[2] = { nullptr, nullptr };
+	int punch_slot = 0;
 
-	bool pickWeapon(Weapon* weapon);
-	void dropWeapon();
+	bool pickWeapon(Weapon* weapon, int slot);
+	void dropWeapon(int slot);
+	bool hasWeapon(Weapon::WeaponType type);
 	void attack();
 };
