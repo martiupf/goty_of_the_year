@@ -32,10 +32,11 @@ public:
 	const float PUNCH_DURATION = 0.4f;
 	const float PUNCH_RECOVERY = 0.5f;
 	const float PUNCH_DAMAGE = 10.0f;
-	const float DEADZONE_Y = -20.0f;
+	static constexpr float DEADZONE_Y = -20.0f;
 
 	const float MAX_JUMP_HOLD = 0.22f;
 	const float JUMP_SPEED = 13.0f;
+	const float DOUBLE_JUMP_SPEED = 18.0f;
 	const float JUMP_RELEASE_SPEED = 4.0f;
 	const float MAX_FALL_SPEED = -24.0f;
 
@@ -49,6 +50,7 @@ public:
 	float vertical_velocity;
 	float gravity;
 	bool is_grounded = false;
+	bool can_double_jump = true;
 	bool is_jump_held = false;
 	float jump_hold_time = 0.0f;
 	bool jump_pressed = false;
@@ -93,6 +95,5 @@ public:
 
 	bool pickWeapon(Weapon* weapon, int slot);
 	void dropWeapon(int slot);
-	bool hasWeapon(Weapon::WeaponType type);
 	void attack();
 };

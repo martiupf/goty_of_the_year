@@ -210,6 +210,7 @@ void Player::update(float delta_time)
     applyGravity(delta_time);
     if (is_grounded) {
         can_dash = true;
+        can_double_jump = true;
         time_since_grounded = 0.0f;
     }
     else {
@@ -512,6 +513,19 @@ void Player::punch(int slot)
     if (slot < 0 || slot > 1)
         return;
 
+    if (weapon_slots[slot] != nullptr) {
+        if (weapon_slots[slot]->type == Weapon::DOUBLE_JUMPER) {
+            if (can_double_jump && dash_time <= 0.0f && knockback_stun_timer <= 0.0f) {
+                vertical_velocity = DOUBLE_JUMP_SPEED;
+                is_grounded = false;
+                can_double_jump = false;
+                is_jump_held = false;
+                jump_hold_time = MAX_JUMP_HOLD;
+            }
+        }
+        return;
+    }
+
     if (weapon_slots[slot] != nullptr)
         return;
 
@@ -636,6 +650,10 @@ void Player::dropWeapon(int slot)
 
     removeChild(weapon);
 
+    Vector3 forward(-sinf(current_yaw), 0.0f, cosf(current_yaw));
+    Vector3 drop_pos = model.getTranslation() + Vector3(0.0f, 1.0f, 0.0f) + forward * 0.8f;
+    Vector3 throw_velocity = forward * 10.0f + Vector3(0.0f, 6.0f, 0.0f);
+
     World::getInstance()->root->addChild(weapon);
-    weapon->setOnGround(model.getTranslation());
+    weapon->setOnGround(drop_pos, throw_velocity);
 }

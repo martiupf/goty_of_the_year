@@ -81,7 +81,7 @@ void Game::initBattle() {
 
 	Mesh* jumper_mesh = Mesh::Get("data/cuidado/Untitled.obj");
 
-	Weapon* double_jumper = new Weapon(Weapon::MOVEMENT, jumper_mesh);
+	Weapon* double_jumper = new Weapon(Weapon::DOUBLE_JUMPER, jumper_mesh);
 	double_jumper->setOnGround(Vector3(0.0f, 0.0f, 0.0f));
 
 	world->root->addChild(double_jumper);
@@ -589,9 +589,21 @@ void Game::onMouseButtonDown(SDL_MouseButtonEvent event)
 		SDL_SetRelativeMouseMode((SDL_bool)(mouse_locked));
 		break;
 	case SDL_BUTTON_LEFT:
-		player1->punch(0); break;
+		if (Input::isKeyPressed(SDL_SCANCODE_Q)) {
+			player1->dropWeapon(0);
+		}
+		else {
+			player1->punch(0);
+		}
+		break;
 	case SDL_BUTTON_RIGHT:
-		player1->punch(1); break;
+		if (Input::isKeyPressed(SDL_SCANCODE_Q)) {
+			player1->dropWeapon(1);
+		}
+		else {
+			player1->punch(1);
+		}
+		break;
 	}
 	
 }
