@@ -26,6 +26,7 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 
     Material material;
     visual = new EntityMesh(mesh, material);
+    visual->animator = &animator;
     visual->is_collidable = false; // Importante: la malla gráfica no debe colisionar
     visual->cast_shadows = false;
     visual->receive_blob_shadows = false;
@@ -34,6 +35,8 @@ Player::Player(Vector3 start_position, Mesh* mesh)
 
 void Player::update(float delta_time)
 {
+    animator.update(delta_time);
+
     if (knockback_stun_timer > 0.0f) {
         knockback_stun_timer -= delta_time;
         if (knockback_stun_timer < 0.0f)

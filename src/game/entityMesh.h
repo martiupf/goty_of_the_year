@@ -3,6 +3,7 @@
 #include "framework/entities/entity.h"
 #include "graphics/mesh.h"
 #include "world.h"
+#include "framework/animation.h"
 
 #define sRenderData MaterialRenderData
 #include "graphics/material.h"
@@ -13,6 +14,7 @@
 class EntityMesh : public Entity {
 public:
     EntityMesh(Mesh* mesh, const Material& material);
+    Animator* animator = nullptr;
 
     Mesh* mesh = nullptr;
     Material material;

@@ -1372,6 +1372,7 @@ bool Mesh::loadOBJ(const char* filename)
 
 bool Mesh::loadMESH(const char* filename)
 {
+	std::cout << "\n>>> ESTOY EJECUTANDO EL NUEVO loadMESH <<<\n";
 	struct stat stbuffer;
 
 	FILE* f = fopen(filename, "rb");
@@ -1441,7 +1442,15 @@ bool Mesh::loadMESH(const char* filename)
 		else
 			pos = fetchEndLine(pos);
 	}
-
+	std::cout << "\n>>> FINAL DE loadMESH <<<"
+		<< "\nVertices: " << vertices.size()
+		<< "\nNormals: " << normals.size()
+		<< "\nUVs: " << uvs.size()
+		<< "\nColors: " << colors.size()
+		<< "\nBones: " << bones.size()
+		<< "\nWeights: " << weights.size()
+		<< "\nIndices: " << indices.size()
+		<< std::endl;
 	delete[] data;
 
 	updateBoundingBox();

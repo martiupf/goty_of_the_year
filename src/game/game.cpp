@@ -71,20 +71,30 @@ void Game::initBattle() {
 
 	loadMap("data/testing_map.scene");
 	World* world = World::getInstance();
-	Mesh* player_mesh = Mesh::Get("data/cuidado/Untitled.obj"); // se podrian poner dos meshes diferentes
 
-	player1 = new Player(Vector3(-3, 0, 0), player_mesh);
+	Mesh* player_mesh = Mesh::Get("data/mario/Untitled.obj"); // se podrian poner dos meshes diferentes
+
+	Mesh* player_mesh2 = Mesh::Get("data/mario/running.MESH");
+	std::cout << "Vertices: " << player_mesh2->vertices.size() << std::endl;
+	std::cout << "UVs: " << player_mesh2->uvs.size() << std::endl;
+	std::cout << "Submeshes: " << player_mesh2->submeshes.size() << std::endl;
+	std::cout << "Materials: " << player_mesh2->materials.size() << std::endl;
+	std::cout << "Bones: " << player_mesh2->bones_info.size() << std::endl;
+
+	player1 = new Player(Vector3(-3, 0, 0), player_mesh2);
+	player1->animator.playAnimation("data/mario/running.skanim", true);
 	player2 = new Player(Vector3(3, 0, 0), player_mesh);
 
 	world->root->addChild(player1);
 	world->root->addChild(player2);
-
-	Mesh* jumper_mesh = Mesh::Get("data/cuidado/Untitled.obj");
+	
+	Mesh* jumper_mesh = Mesh::Get("data/mario/Untitled.obj");
 
 	Weapon* double_jumper = new Weapon(Weapon::DOUBLE_JUMPER, jumper_mesh);
 	double_jumper->setOnGround(Vector3(0.0f, 0.0f, 0.0f));
 
 	world->root->addChild(double_jumper);
+	
 }
 
 void Game::initVictoryScreen() {

@@ -86,7 +86,17 @@ void EntityMesh::render(Camera* camera) {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    Shader* shader = (receive_lighting && !shadow_pass) ? material.shader : Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
+    Shader* shader = nullptr;
+
+    if (animator && !mesh->bones.empty() && !shadow_pass) {
+        shader = Shader::Get("data/shaders/animated.vs", "data/shaders/light.fs");
+    }
+    else {
+        shader = (receive_lighting && !shadow_pass)
+            ? material.shader
+            : Shader::Get("data/shaders/basic.vs", "data/shaders/texture.fs");
+    }
+    
     if (!shader) return;
 
     shader->enable();
@@ -149,12 +159,24 @@ void EntityMesh::render(Camera* camera) {
                 continue;
 
             shader->setUniform("u_model", global_matrix);
-            mesh->render(GL_TRIANGLES);
+
+            if (animator && !shadow_pass) {
+                mesh->renderAnimated(GL_TRIANGLES, &animator->getCurrentSkeleton());
+            }
+            else {
+                mesh->render(GL_TRIANGLES);
+            }
         }
     }
     else {
         shader->setUniform("u_model", getGlobalMatrix());
-        mesh->render(GL_TRIANGLES);
+
+        if (animator && !mesh->bones.empty() && !shadow_pass) {
+            mesh->renderAnimated(GL_TRIANGLES, &animator->getCurrentSkeleton());
+        }
+        else {
+            mesh->render(GL_TRIANGLES);
+        }
     }
 
     //debug

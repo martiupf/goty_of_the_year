@@ -3,6 +3,7 @@
 #include "framework/entities/entity.h"
 #include "game/entityMesh.h"
 #include "weapon.h"
+#include "framework/animation.h"
 
 struct PunchOBB {
 	Vector3 center;
@@ -20,6 +21,7 @@ public:
 	AABB collisionBox;
 
 	Mesh* mesh;
+	Animator animator;
 
 	float max_hp = 100.0f;
 	float current_hp = 100.0f;
